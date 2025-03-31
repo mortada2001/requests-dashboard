@@ -58,6 +58,7 @@ async function handleLogin(event) {
                 window.location.href = 'non-voice.html'
                 break
             case 'admin':
+                // Admin users are still redirected to admin.html by default
                 window.location.href = 'admin.html'
                 break
             default:
@@ -97,6 +98,7 @@ async function checkSession() {
                 window.location.href = 'non-voice.html'
                 break
             case 'admin':
+                // Admin users are still redirected to admin.html by default
                 window.location.href = 'admin.html'
                 break
         }
