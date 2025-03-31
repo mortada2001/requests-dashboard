@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Voice Dashboard - Sales Support System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .expanded-row {
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        
+        .expanded-content {
+            padding: 1rem 2rem;
+            background-color: #f8fafc;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .notes-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .notes-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .notes-title {
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clickable-row:hover {
+            background-color: #f1f5f9;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <div id="app" class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <i class="fas fa-headset text-blue-600 text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold text-gray-800">Non-Voice Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-user text-gray-400"></i>
+                            <span id="user-name" class="text-gray-600 font-medium"></span>
+                        </div>
+                        <span id="status-indicator" class="status-pill"></span>
+                        <button id="logout" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <!-- Status Controls -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-circle-dot text-blue-500 mr-2"></i>
+                    My Status
+                </h2>
+                <div class="flex items-center space-x-4">
+                    <button id="ready-btn" class="btn status-ready flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Ready
+                    </button>
+                    <button id="break-btn" class="btn status-break flex items-center">
+                        <i class="fas fa-coffee mr-2"></i>
+                        Break
+                    </button>
+                </div>
+            </div>
+
+            <!-- Assigned Requests -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-list-check text-blue-500 mr-2"></i>
+                        Assigned Requests
+                    </h2>
+                    <button id="refresh-btn" class="btn btn-secondary flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Phone Number</th>
+                                <th>Status</th>
+                                <th>Sales Assignee</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requests-table">
+                            <!-- Requests will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- Update Request Modal -->
+        <div id="update-modal" class="modal hidden">
+            <div class="modal-content animate-slide-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Update Request</h3>
+                    <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="update-form">
+                    <input type="hidden" id="request-id">
+                    <div class="form-group">
+                        <label class="form-label" for="status">
+                            <i class="fas fa-tag text-gray-400 mr-2"></i>
+                            Status
+                        </label>
+                        <select id="status" class="form-input">
+                            <option value="open">Open</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="non-voice-notes">
+                            <i class="fas fa-note-sticky text-gray-400 mr-2"></i>
+                            Notes
+                        </label>
+                        <textarea id="non-voice-notes" class="form-input" rows="3" placeholder="Add your notes here..."></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-2 mt-6">
+                        <button type="button" onclick="closeModal()" class="btn btn-secondary">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-2"></i>
+                            Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://pdcssepqmgzpkayzfqta.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkY3NzZXBxbWd6cGtheXpmcXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MzczMjksImV4cCI6MjA1NjQxMzMyOX0.NqN7b7itdA8Tz0sG4fzSI4Y19P5syYFWnmKwANbH1IY'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        let currentUser = null
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check session
+            const { data: { session }, error } = await supabase.auth.getSession()
+            if (error || !session) {
+                window.location.href = 'login.html'
+                return
+            }
+
+            // Get user data
+            const { data: userData, error: userError } = await supabase
+                .from('requests_users')
+                .select('*')
+                .eq('email', session.user.email)
+                .single()
+
+            if (userError || userData.role !== 'non-voice') {
+                window.location.href = 'login.html'
+                return
+            }
+
+            currentUser = { ...session.user, ...userData }
+            document.getElementById('user-name').textContent = currentUser.assignee
+            updateStatusIndicator(currentUser.status)
+            loadAssignedRequests()
+
+            // Hide loading spinner
+            document.getElementById('loading').classList.add('hidden')
+        })
+
+        // Event Listeners
+        document.getElementById('ready-btn').addEventListener('click', () => updateStatus('ready'))
+        document.getElementById('break-btn').addEventListener('click', () => updateStatus('break'))
+        document.getElementById('refresh-btn').addEventListener('click', loadAssignedRequests)
+        document.getElementById('logout').addEventListener('click', handleLogout)
+        document.getElementById('close-modal').addEventListener('click', closeModal)
+
+        // Update status
+        async function updateStatus(status) {
+            try {
+                const { error } = await supabase
+                    .from('requests_users')
+                    .update({ status })
+                    .eq('email', currentUser.email)
+
+                if (error) throw error
+
+                currentUser.status = status
+                updateStatusIndicator(status)
+                
+                if (status === 'break') {
+                    // If going on break, reassign requests
+                    await reassignRequests()
+                } else if (status === 'ready') {
+                    // If becoming ready, check for unassigned requests
+                    await assignUnassignedRequests()
+                }
+            } catch (error) {
+                console.error('Error updating status:', error)
+                alert('Failed to update status')
+            }
+        }
+
+        // Update status indicator
+        function updateStatusIndicator(status) {
+            const indicator = document.getElementById('status-indicator')
+            indicator.textContent = status.charAt(0).toUpperCase() + status.slice(1)
+            indicator.className = `status-pill status-${status}`
+        }
+
+        // Load assigned requests
+        async function loadAssignedRequests() {
+            try {
+                const { data: requests, error } = await supabase
+                    .from('requests')
+                    .select('*')
+                    .eq('assigned_to', currentUser.assignee)
+                    .order('created_at', { ascending: false })
+
+                if (error) throw error
+
+                const requestsTable = document.getElementById('requests-table')
+                
+                if (!requests || requests.length === 0) {
+                    requestsTable.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-3"></i>
+                                <p>No requests assigned</p>
+                            </td>
+                        </tr>
+                    `
+                    return
+                }
+
+                requestsTable.innerHTML = requests.map(request => `
+                    <tr class="clickable-row animate-fade-in" onclick="toggleExpandedRow(this, '${request.id}')">
+                        <td class="font-medium text-gray-900">${request.customer_name || ''}</td>
+                        <td>${request.phone_number || ''}</td>
+                        <td>
+                            <span class="status-pill status-${request.status}">
+                                <i class="fas fa-${getStatusIcon(request.status)}"></i>
+                                ${request.status}
+                            </span>
+                        </td>
+                        <td>${request.sales_assignee || ''}</td>
+                        <td>${formatDate(request.created_at)}</td>
+                        <td>
+                            <button 
+                                onclick="event.stopPropagation(); openUpdateModal('${request.id}')" 
+                                class="btn btn-update"
+                                title="Update request status and notes"
+                            >
+                                <i class="fas fa-edit mr-1"></i>
+                                Update
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="expanded-content hidden" id="expanded-${request.id}">
+                        <td colspan="6">
+                            <div class="notes-section">
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-comment text-blue-500"></i>
+                                        Sales Notes
+                                    </div>
+                                    <p class="text-gray-600">${request.notes || 'No sales notes available'}</p>
+                                </div>
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-note-sticky text-green-500"></i>
+                                        Non-Voice Notes
+                                    </div>
+                                    <p class="text-gray-600">${request.non_voice_notes || 'No non-voice notes added yet'}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('')
+            } catch (error) {
+                console.error('Error loading requests:', error)
+                alert('Failed to load requests')
+            }
+        }
+
+        // Helper function to get status icon
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'open': return 'door-open'
+                case 'in-progress': return 'spinner'
+                case 'completed': return 'check-circle'
+                default: return 'circle'
+            }
+        }
+
+        // Format date helper
+        function formatDate(dateString) {
+            const options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit'
+            }
+            return new Date(dateString).toLocaleDateString('en-US', options)
+        }
+
+        // Toggle expanded row
+        function toggleExpandedRow(row, requestId) {
+            const expandedRow = document.getElementById(`expanded-${requestId}`)
+            const allExpandedRows = document.querySelectorAll('.expanded-content')
+            
+            // Close all other expanded rows
+            allExpandedRows.forEach(r => {
+                if (r.id !== `expanded-${requestId}`) {
+                    r.classList.add('hidden')
+                }
+            })
+
+            // Toggle clicked row
+            expandedRow.classList.toggle('hidden')
+            row.classList.toggle('expanded-row')
+        }
+
+        // Reassign requests when going on break
+        async function reassignRequests() {
+            try {
+                // Get available non-voice employee
+                const { data: availableEmployee, error: employeeError } = await supabase
+                    .from('requests_users')
+                    .select('assignee')
+                    .eq('role', 'non-voice')
+                    .eq('status', 'ready')
+                    .neq('email', currentUser.email)
+                    .limit(1)
+                    .single()
+
+                if (employeeError) {
+                    console.log('No available employee to reassign requests')
+                    return
+                }
+
+                // Update all assigned requests
+                const { error: updateError } = await supabase
+                    .from('requests')
+                    .update({ assigned_to: availableEmployee.assignee })
+                    .eq('assigned_to', currentUser.assignee)
+                    .eq('status', 'open')
+
+                if (updateError) throw updateError
+
+                loadAssignedRequests()
+            } catch (error) {
+                console.error('Error reassigning requests:', error)
+                alert('Failed to reassign requests')
+            }
+        }
+
+        // Assign unassigned requests to ready employee
+        async function assignUnassignedRequests() {
+            try {
+                // Get unassigned requests
+                const { data: unassignedRequests, error: requestsError } = await supabase
+                    .from('requests')
+                    .select('id')
+                    .is('assigned_to', null)
+                    .eq('status', 'open')
+
+                if (requestsError) throw requestsError
+
+                if (!unassignedRequests || unassignedRequests.length === 0) {
+                    return // No unassigned requests
+                }
+
+                // Update all unassigned requests to be assigned to current user
+                const { error: updateError } = await supabase
+                    .from('requests')
+                    .update({ assigned_to: currentUser.assignee })
+                    .is('assigned_to', null)
+                    .eq('status', 'open')
+
+                if (updateError) throw updateError
+
+                // Reload the requests table
+                loadAssignedRequests()
+            } catch (error) {
+                console.error('Error assigning unassigned requests:', error)
+                alert('Failed to assign unassigned requests')
+            }
+        }
+
+        // Open update modal
+        async function openUpdateModal(requestId) {
+            try {
+                const { data: request, error } = await supabase
+                    .from('requests')
+                    .select('*')
+                    .eq('id', requestId)
+                    .single()
+
+                if (error) throw error
+
+                // Store the request ID and populate form fields
+                document.getElementById('request-id').value = requestId
+                document.getElementById('status').value = request.status || 'open'
+                document.getElementById('non-voice-notes').value = request.non_voice_notes || ''
+                
+                // Show modal with animation
+                const modal = document.getElementById('update-modal')
+                modal.classList.remove('hidden')
+                modal.querySelector('.modal-content').classList.add('animate-fade-in')
+
+                // Add click event to close modal when clicking outside
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal()
+                    }
+                })
+            } catch (error) {
+                console.error('Error loading request:', error)
+                alert('Failed to load request details')
+            }
+        }
+
+        // Close modal function
+        function closeModal() {
+            const modal = document.getElementById('update-modal')
+            modal.classList.add('hidden')
+            document.getElementById('update-form').reset()
+        }
+
+        // Handle update form submission
+        document.getElementById('update-form').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            
+            const requestId = document.getElementById('request-id').value
+            const status = document.getElementById('status').value
+            const nonVoiceNotes = document.getElementById('non-voice-notes').value
+
+            try {
+                const { error } = await supabase
+                    .from('requests')
+                    .update({
+                        status,
+                        non_voice_notes: nonVoiceNotes,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', requestId)
+
+                if (error) throw error
+
+                closeModal()
+                await loadAssignedRequests()
+                
+                // Show success message
+                alert('Request updated successfully!')
+            } catch (error) {
+                console.error('Error updating request:', error)
+                alert('Failed to update request: ' + error.message)
+            }
+        })
+
+        // Handle logout
+        async function handleLogout() {
+            try {
+                const { error } = await supabase.auth.signOut()
+                if (error) throw error
+                window.location.href = 'login.html'
+            } catch (error) {
+                console.error('Error signing out:', error)
+                alert('Failed to sign out')
+            }
+        }
+    </script>
+</body>
+</html> 

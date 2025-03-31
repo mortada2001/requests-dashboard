@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Support System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <div id="app" class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <div class="flex-shrink-0 flex items-center">
+                            <h1 class="text-xl font-bold text-gray-800">Sales Support System</h1>
+                        </div>
+                    </div>
+                    <div class="flex items-center" id="nav-items">
+                        <!-- Navigation items will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <div id="content">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Login</h3>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+                            Email
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="email" type="email" required>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                            Password
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" 
+                               id="password" type="password" required>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" 
+                                type="submit">
+                            Sign In
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://pdcssepqmgzpkayzfqta.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkY3NzZXBxbWd6cGtheXpmcXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MzczMjksImV4cCI6MjA1NjQxMzMyOX0.NqN7b7itdA8Tz0sG4fzSI4Y19P5syYFWnmKwANbH1IY'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        async function checkSessionAndRedirect() {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession()
+                if (error) throw error
+
+                if (!session) {
+                    // No session, redirect to login
+                    window.location.href = 'login.html'
+                    return
+                }
+
+                // Get user role
+                const { data: userData, error: roleError } = await supabase
+                    .from('requests_users')
+                    .select('role')
+                    .eq('email', session.user.email)
+                    .single()
+
+                if (roleError) throw roleError
+
+                // Redirect based on role
+                switch (userData.role) {
+                    case 'sales':
+                        window.location.href = 'sales.html'
+                        break
+                    case 'non-voice':
+                        window.location.href = 'non-voice.html'
+                        break
+                    case 'admin':
+                        window.location.href = 'admin.html'
+                        break
+                    default:
+                        throw new Error('Invalid user role')
+                }
+            } catch (error) {
+                console.error('Error checking session:', error)
+                window.location.href = 'login.html'
+            }
+        }
+
+        // Check session when page loads
+        document.addEventListener('DOMContentLoaded', checkSessionAndRedirect)
+    </script>
+</body>
+</html> 
