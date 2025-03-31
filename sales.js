@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         .eq('email', session.user.email)
         .single()
 
-    if (userError || userData.role !== 'sales') {
+    if (userError || (userData.role !== 'sales' && userData.role !== 'admin')) {
         window.location.href = 'login.html'
         return
     }
