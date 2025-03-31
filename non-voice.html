@@ -63,6 +63,22 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+        
+        /* Add styles for status types */
+        .status-ready {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-break {
+            background-color: #ffedd5;
+            color: #9a3412;
+        }
+        
+        .status-offline {
+            background-color: #f3f4f6;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -215,13 +231,24 @@
                 .eq('email', session.user.email)
                 .single()
 
-            if (userError || userData.role !== 'non-voice') {
+            if (userError || (userData.role !== 'non-voice' && userData.role !== 'admin')) {
                 window.location.href = 'login.html'
                 return
             }
 
             currentUser = { ...session.user, ...userData }
             document.getElementById('user-name').textContent = currentUser.assignee
+            
+            // Set default status if it's null or undefined
+            if (!currentUser.status) {
+                currentUser.status = 'offline'
+                // Update status in database
+                await supabase
+                    .from('requests_users')
+                    .update({ status: 'offline' })
+                    .eq('email', currentUser.email)
+            }
+            
             updateStatusIndicator(currentUser.status)
             loadAssignedRequests()
 
@@ -264,6 +291,10 @@
         // Update status indicator
         function updateStatusIndicator(status) {
             const indicator = document.getElementById('status-indicator')
+            // Handle null or undefined status by setting a default value
+            if (!status) {
+                status = 'offline'
+            }
             indicator.textContent = status.charAt(0).toUpperCase() + status.slice(1)
             indicator.className = `status-pill status-${status}`
         }
