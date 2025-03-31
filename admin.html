@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Sales Support System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .stats-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats-icon {
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .tab-button:hover:not(.active) {
+            border-bottom-color: #e5e7eb;
+        }
+
+        .user-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .user-card:hover {
+            transform: translateX(4px);
+        }
+
+        .expanded-row {
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        
+        .expanded-content {
+            padding: 1rem 2rem;
+            background-color: #f8fafc;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .notes-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .notes-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .notes-title {
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clickable-row:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-shield-alt text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-user text-gray-400"></i>
+                        <span id="user-name" class="text-gray-600 font-medium"></span>
+                    </div>
+                    <button id="logout" class="btn btn-secondary">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="stats-card">
+                <div class="stats-icon bg-blue-100 text-blue-600">
+                    <i class="fas fa-clipboard-list text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium">Total Requests</h3>
+                <p id="total-requests" class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+            <div class="stats-card">
+                <div class="stats-icon bg-yellow-100 text-yellow-600">
+                    <i class="fas fa-clock text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium">Open Requests</h3>
+                <p id="open-requests" class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+            <div class="stats-card">
+                <div class="stats-icon bg-green-100 text-green-600">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium">Completed Requests</h3>
+                <p id="completed-requests" class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+            <div class="stats-card">
+                <div class="stats-icon bg-purple-100 text-purple-600">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium">Active Users</h3>
+                <p id="active-users" class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="border-b border-gray-200">
+                <div class="flex space-x-4 px-4">
+                    <button class="tab-button active" data-tab="requests">
+                        <i class="fas fa-list-ul mr-2"></i>
+                        All Requests
+                    </button>
+                    <button class="tab-button" data-tab="users">
+                        <i class="fas fa-users mr-2"></i>
+                        User Management
+                    </button>
+                </div>
+            </div>
+
+            <!-- Requests Tab -->
+            <div id="requests-tab" class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center space-x-4">
+                        <input type="text" id="search-requests" placeholder="Search requests..." class="form-input">
+                        <select id="filter-status" class="form-input">
+                            <option value="">All Status</option>
+                            <option value="open">Open</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <button id="refresh-requests" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Phone Number</th>
+                                <th>Status</th>
+                                <th>Sales Assignee</th>
+                                <th>Non-Voice Assignee</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requests-table">
+                            <!-- Requests will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="users-tab" class="p-6 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="add-user" class="btn btn-primary">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Add New User
+                    </button>
+                    <div class="flex items-center space-x-4">
+                        <input type="text" id="search-users" placeholder="Search users..." class="form-input">
+                        <select id="filter-role" class="form-input">
+                            <option value="">All Roles</option>
+                            <option value="sales">Sales</option>
+                            <option value="non-voice">Non-Voice</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="users-container">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit User Modal -->
+    <div id="user-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900" id="modal-title">Add New User</h3>
+                <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-envelope text-gray-400 mr-2"></i>
+                        Email
+                    </label>
+                    <input type="email" id="user-email" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-user-tag text-gray-400 mr-2"></i>
+                        Role
+                    </label>
+                    <select id="user-role" class="form-input" required>
+                        <option value="sales">Sales</option>
+                        <option value="non-voice">Non-Voice</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-id-badge text-gray-400 mr-2"></i>
+                        Assignee Name
+                    </label>
+                    <input type="text" id="user-assignee" class="form-input" required>
+                </div>
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button type="button" onclick="closeUserModal()" class="btn btn-secondary">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-2"></i>
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html> 
