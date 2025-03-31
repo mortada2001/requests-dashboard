@@ -1,7 +1,5 @@
-// Initialize Supabase client
-const supabaseUrl = 'YOUR_SUPABASE_URL'
-const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'
-const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+// Just use the pre-initialized Supabase client from the HTML file
+// No need to reinitialize it here
 
 // DOM Elements
 const loadingElement = document.getElementById('loading')
@@ -9,18 +7,14 @@ const userNameElement = document.getElementById('user-name')
 const logoutButton = document.getElementById('logout')
 const tabButtons = document.querySelectorAll('.tab-button')
 const requestsTab = document.getElementById('requests-tab')
-const usersTab = document.getElementById('users-tab')
+const employeesTab = document.getElementById('employees-tab')
 const searchRequests = document.getElementById('search-requests')
 const filterStatus = document.getElementById('filter-status')
 const refreshRequestsButton = document.getElementById('refresh-requests')
 const requestsTable = document.getElementById('requests-table')
-const addUserButton = document.getElementById('add-user')
-const searchUsers = document.getElementById('search-users')
-const filterRole = document.getElementById('filter-role')
-const usersContainer = document.getElementById('users-container')
-const userModal = document.getElementById('user-modal')
-const userForm = document.getElementById('user-form')
-const modalTitle = document.getElementById('modal-title')
+const searchEmployees = document.getElementById('search-employees')
+const filterEmployeeStatus = document.getElementById('filter-employee-status')
+const employeesContainer = document.getElementById('employees-container')
 
 // Statistics Elements
 const totalRequestsElement = document.getElementById('total-requests')
@@ -34,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await checkSession()
         await loadStatistics()
         await loadRequests()
-        await loadUsers()
+        await loadEmployees()
     } catch (error) {
         console.error('Error initializing dashboard:', error)
         showError('Failed to initialize dashboard')
@@ -45,24 +39,39 @@ logoutButton.addEventListener('click', handleLogout)
 tabButtons.forEach(button => {
     button.addEventListener('click', () => switchTab(button.dataset.tab))
 })
-searchRequests.addEventListener('input', debounce(loadRequests, 300))
+
+// Enhanced search with visual feedback
+searchRequests.addEventListener('input', () => {
+    const searchTerm = searchRequests.value.trim();
+    
+    // Visual feedback that search is happening
+    if (searchTerm.length > 0) {
+        searchRequests.classList.add('searching');
+        refreshRequestsButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Searching...';
+    } else {
+        searchRequests.classList.remove('searching');
+        refreshRequestsButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Refresh';
+    }
+    
+    // Debounce the actual search
+    debounce(loadRequests, 300)();
+});
+
 filterStatus.addEventListener('change', loadRequests)
 refreshRequestsButton.addEventListener('click', loadRequests)
-addUserButton.addEventListener('click', () => openUserModal())
-searchUsers.addEventListener('input', debounce(loadUsers, 300))
-filterRole.addEventListener('change', loadUsers)
-userForm.addEventListener('submit', handleUserSubmit)
+searchEmployees.addEventListener('input', debounce(loadEmployees, 300))
+filterEmployeeStatus.addEventListener('change', loadEmployees)
 
 // Session Management
 async function checkSession() {
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const { data: { user }, error } = await window.supabase.auth.getUser()
     
     if (error || !user) {
         window.location.href = '/login.html'
         return
     }
 
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await window.supabase
         .from('requests_users')
         .select('*')
         .eq('email', user.email)
@@ -77,7 +86,7 @@ async function checkSession() {
 }
 
 async function handleLogout() {
-    await supabase.auth.signOut()
+    await window.supabase.auth.signOut()
     window.location.href = '/login.html'
 }
 
@@ -91,10 +100,10 @@ async function loadStatistics() {
             { count: completedRequests },
             { count: activeUsers }
         ] = await Promise.all([
-            supabase.from('requests').select('*', { count: 'exact' }),
-            supabase.from('requests').select('*', { count: 'exact' }).eq('status', 'open'),
-            supabase.from('requests').select('*', { count: 'exact' }).eq('status', 'completed'),
-            supabase.from('requests_users').select('*', { count: 'exact' }).eq('status', 'active')
+            window.supabase.from('requests').select('*', { count: 'exact' }),
+            window.supabase.from('requests').select('*', { count: 'exact' }).eq('status', 'open'),
+            window.supabase.from('requests').select('*', { count: 'exact' }).eq('status', 'completed'),
+            window.supabase.from('requests_users').select('*', { count: 'exact' }).eq('status', 'active')
         ])
 
         totalRequestsElement.textContent = totalRequests || 0
@@ -111,9 +120,24 @@ async function loadStatistics() {
 
 // Requests Management
 async function loadRequests() {
-    showLoading()
+    // Show a loading overlay on the table instead of refreshing the whole page
+    const tableContainer = requestsTable.closest('.table-container');
+    
+    // Create or find existing overlay
+    let loadingOverlay = tableContainer.querySelector('.table-loading-overlay');
+    if (!loadingOverlay) {
+        loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'table-loading-overlay';
+        loadingOverlay.innerHTML = '<div class="spinner-container"><div class="loading-spinner"></div></div>';
+        tableContainer.style.position = 'relative';
+        tableContainer.appendChild(loadingOverlay);
+    }
+    
+    // Show the overlay
+    loadingOverlay.style.display = 'flex';
+    
     try {
-        let query = supabase
+        let query = window.supabase
             .from('requests')
             .select('*')
             .order('created_at', { ascending: false })
@@ -122,7 +146,11 @@ async function loadRequests() {
         const statusFilter = filterStatus.value
 
         if (searchTerm) {
-            query = query.or(`customer_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%`)
+            if (!isNaN(searchTerm)) {
+                query = query.or(`customer_name.ilike.%${searchTerm}%,phone_number.eq.${searchTerm}`)
+            } else {
+                query = query.ilike('customer_name', `%${searchTerm}%`)
+            }
         }
 
         if (statusFilter) {
@@ -133,8 +161,9 @@ async function loadRequests() {
 
         if (error) throw error
 
+        // Update table content directly
         requestsTable.innerHTML = requests.map(request => `
-            <tr class="clickable-row" onclick="toggleRequestDetails(this, ${JSON.stringify(request)})">
+            <tr class="clickable-row" data-id="${request.id}" onclick="toggleRequestDetails(this, ${JSON.stringify(request)})">
                 <td>${request.customer_name}</td>
                 <td>${request.phone_number}</td>
                 <td>
@@ -146,17 +175,24 @@ async function loadRequests() {
                 <td>${request.non_voice_assignee || 'N/A'}</td>
                 <td>${new Date(request.created_at).toLocaleString()}</td>
                 <td>
-                    <button onclick="event.stopPropagation(); deleteRequest(${request.id})" class="btn btn-danger btn-sm">
+                    <button onclick="event.stopPropagation(); deleteRequest('${request.id}')" class="btn btn-danger btn-sm">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
         `).join('')
+        
+        // Reset search UI if search is complete
+        if (searchRequests.classList.contains('searching')) {
+            refreshRequestsButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Refresh';
+        }
     } catch (error) {
         console.error('Error loading requests:', error)
         showError('Failed to load requests')
     } finally {
-        hideLoading()
+        // Hide loading overlay when done
+        loadingOverlay.style.display = 'none';
+        hideLoading();
     }
 }
 
@@ -203,174 +239,352 @@ function toggleRequestDetails(row, request) {
 async function deleteRequest(requestId) {
     if (!confirm('Are you sure you want to delete this request?')) return
 
-    showLoading()
+    // Find the row and its expanded content (if any)
+    const rowToDelete = document.querySelector(`tr[data-id="${requestId}"]`);
+    if (!rowToDelete) return;
+    
+    const expandedContent = rowToDelete.nextElementSibling && 
+        rowToDelete.nextElementSibling.querySelector('.expanded-content') ? 
+        rowToDelete.nextElementSibling : null;
+    
+    // Show a loading spinner on the row instead of the global loading
+    rowToDelete.style.opacity = '0.5';
+    
     try {
-        const { error } = await supabase
+        // Convert requestId to number if it's a string numeric value
+        const id = !isNaN(requestId) ? Number(requestId) : requestId;
+        
+        const { error } = await window.supabase
             .from('requests')
             .delete()
-            .eq('id', requestId)
+            .eq('id', id);
 
-        if (error) throw error
+        if (error) throw error;
 
-        await loadRequests()
-        await loadStatistics()
-        showSuccess('Request deleted successfully')
+        // Success - animate and remove the row
+        rowToDelete.style.transition = 'opacity 0.3s ease, height 0.3s ease, padding 0.3s ease';
+        rowToDelete.style.opacity = '0';
+        
+        setTimeout(() => {
+            if (expandedContent) {
+                expandedContent.style.transition = 'opacity 0.3s ease, height 0.3s ease';
+                expandedContent.style.opacity = '0';
+                expandedContent.style.height = '0';
+                
+                setTimeout(() => expandedContent.remove(), 300);
+            }
+            
+            rowToDelete.style.height = '0';
+            rowToDelete.style.padding = '0';
+            
+            setTimeout(() => {
+                rowToDelete.remove();
+                
+                // Just update the statistics without reloading all requests
+                loadStatistics();
+                
+                showSuccess('Request deleted successfully');
+            }, 300);
+        }, 300);
     } catch (error) {
-        console.error('Error deleting request:', error)
-        showError('Failed to delete request')
-    } finally {
-        hideLoading()
+        // Error - restore the row appearance
+        rowToDelete.style.opacity = '1';
+        
+        console.error('Error deleting request:', error);
+        showError('Failed to delete request');
     }
 }
 
-// User Management
-async function loadUsers() {
-    showLoading()
+// Employee Management
+async function loadEmployees() {
+    // Show a loading overlay on the employees container
+    const container = employeesContainer.closest('.grid');
+    
+    // Create or find existing overlay
+    let loadingOverlay = container.querySelector('.employees-loading-overlay');
+    if (!loadingOverlay) {
+        loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'table-loading-overlay employees-loading-overlay';
+        loadingOverlay.innerHTML = '<div class="spinner-container"><div class="loading-spinner"></div></div>';
+        container.style.position = 'relative';
+        container.appendChild(loadingOverlay);
+    }
+    
+    // Show the overlay
+    loadingOverlay.style.display = 'flex';
+    
     try {
-        let query = supabase
+        // Get non-voice employees
+        let query = window.supabase
             .from('requests_users')
             .select('*')
-            .order('role', { ascending: true })
+            .eq('role', 'non-voice');
 
-        const searchTerm = searchUsers.value.trim()
-        const roleFilter = filterRole.value
+        const searchTerm = searchEmployees.value.trim();
+        const statusFilter = filterEmployeeStatus.value;
 
         if (searchTerm) {
-            query = query.or(`email.ilike.%${searchTerm}%,assignee.ilike.%${searchTerm}%`)
+            query = query.or(`email.ilike.%${searchTerm}%,assignee.ilike.%${searchTerm}%`);
         }
 
-        if (roleFilter) {
-            query = query.eq('role', roleFilter)
+        if (statusFilter) {
+            query = query.eq('status', statusFilter);
         }
 
-        const { data: users, error } = await query
+        const { data: employees, error } = await query;
 
-        if (error) throw error
+        if (error) throw error;
 
-        usersContainer.innerHTML = users.map(user => `
-            <div class="user-card">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-semibold text-gray-900">${user.assignee}</h3>
-                        <p class="text-gray-500 text-sm">${user.email}</p>
-                        <div class="flex items-center mt-2">
-                            <span class="badge ${user.role}">${user.role}</span>
-                            <span class="badge ${user.status} ml-2">${user.status}</span>
+        // Get all requests to manually count assignments for each employee
+        const { data: allRequests, error: requestsError } = await window.supabase
+            .from('requests')
+            .select('*');
+            
+        if (requestsError) throw requestsError;
+
+        // Count open and closed requests for each employee
+        const employeesWithStats = employees.map(employee => {
+            // Filter requests assigned to this employee
+            const employeeRequests = allRequests.filter(r => 
+                r.non_voice_assignee === employee.assignee
+            );
+            
+            const openRequests = employeeRequests.filter(r => 
+                r.status === 'open' || r.status === 'in-progress'
+            ).length;
+            
+            const closedRequests = employeeRequests.filter(r => 
+                r.status === 'completed'
+            ).length;
+            
+            // Calculate time in current status using updated_at
+            let timeInStatus = '00:00:00';
+            let statusTimestamp = employee.updated_at || null;
+            
+            if (statusTimestamp) {
+                const statusTime = new Date(statusTimestamp);
+                const now = new Date();
+                const diffMs = now - statusTime;
+                
+                // Format as HH:MM:SS
+                const diffSecs = Math.floor(diffMs / 1000);
+                const hours = Math.floor(diffSecs / 3600);
+                const minutes = Math.floor((diffSecs % 3600) / 60);
+                const seconds = diffSecs % 60;
+                
+                timeInStatus = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            return {
+                ...employee,
+                openRequests,
+                closedRequests,
+                timeInStatus,
+                statusTimestamp
+            };
+        });
+
+        // Store employee data in localStorage for persistence
+        localStorage.setItem('employeeStats', JSON.stringify(employeesWithStats.map(e => ({
+            email: e.email,
+            status: e.status,
+            statusTimestamp: e.updated_at
+        }))));
+
+        employeesContainer.innerHTML = employeesWithStats.map(employee => {
+            // Get initials for avatar
+            const initials = employee.assignee
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase();
+                
+            // Convert statuses that may be 'busy' or others to either 'ready' or 'break'
+            const status = ['ready', 'break'].includes(employee.status) ? employee.status : 'ready';
+                
+            return `
+                <div class="employee-card" data-email="${employee.email}">
+                    <div class="employee-header">
+                        <div class="employee-avatar">
+                            ${initials}
+                        </div>
+                        <div class="employee-info">
+                            <div class="employee-name">${employee.assignee}</div>
+                            <div class="employee-email">${employee.email}</div>
                         </div>
                     </div>
-                    <div class="flex space-x-2">
-                        <button onclick="openUserModal(${JSON.stringify(user)})" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-edit"></i>
+                    <div class="flex items-center justify-center my-2">
+                        <span class="status-badge ${status} px-3 py-1 rounded-full text-sm">
+                            ${formatStatus(status)}
+                        </span>
+                    </div>
+                    <div class="timer-display text-center my-2">
+                        <div class="text-sm text-gray-500">Time in status</div>
+                        <div class="timer-value font-mono text-lg" 
+                             data-email="${employee.email}" 
+                             data-timestamp="${employee.updated_at || ''}">
+                            ${employee.timeInStatus}
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">${employee.openRequests}</div>
+                            <div class="stat-label">Open Requests</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${employee.closedRequests}</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button onclick="changeEmployeeStatus('${employee.email}', 'ready')" 
+                            class="btn ${status === 'ready' ? 'btn-primary' : 'btn-outline-primary'} flex-1">
+                            <i class="fas fa-check-circle mr-1"></i> Ready
                         </button>
-                        <button onclick="deleteUser('${user.email}')" class="btn btn-danger btn-sm">
-                            <i class="fas fa-trash"></i>
+                        <button onclick="changeEmployeeStatus('${employee.email}', 'break')" 
+                            class="btn ${status === 'break' ? 'btn-primary' : 'btn-outline-primary'} flex-1">
+                            <i class="fas fa-coffee mr-1"></i> Break
                         </button>
                     </div>
                 </div>
-            </div>
-        `).join('')
+            `;
+        }).join('');
+        
+        // Start timer updates
+        startStatusTimers();
     } catch (error) {
-        console.error('Error loading users:', error)
-        showError('Failed to load users')
+        console.error('Error loading employees:', error);
+        showError('Failed to load employees');
     } finally {
-        hideLoading()
+        // Hide loading overlay when done
+        loadingOverlay.style.display = 'none';
     }
 }
 
-function openUserModal(user = null) {
-    const userIdInput = document.getElementById('user-id')
-    const userEmailInput = document.getElementById('user-email')
-    const userRoleInput = document.getElementById('user-role')
-    const userAssigneeInput = document.getElementById('user-assignee')
-
-    if (user) {
-        modalTitle.textContent = 'Edit User'
-        userIdInput.value = user.id || ''
-        userEmailInput.value = user.email || ''
-        userRoleInput.value = user.role || 'sales'
-        userAssigneeInput.value = user.assignee || ''
-        userEmailInput.disabled = true
-    } else {
-        modalTitle.textContent = 'Add New User'
-        userForm.reset()
-        userEmailInput.disabled = false
+// Function to start timers for all employee status displays
+function startStatusTimers() {
+    // Clear any existing interval
+    if (window.statusTimerInterval) {
+        clearInterval(window.statusTimerInterval);
     }
-
-    userModal.classList.remove('hidden')
+    
+    // Update all timers every second
+    window.statusTimerInterval = setInterval(() => {
+        const timerElements = document.querySelectorAll('.timer-value');
+        timerElements.forEach(timerElement => {
+            const timestamp = timerElement.getAttribute('data-timestamp');
+            
+            if (timestamp) {
+                // If we have a status change timestamp, calculate the elapsed time
+                const startTime = new Date(timestamp);
+                const now = new Date();
+                const diffMs = now - startTime;
+                
+                // Format as HH:MM:SS
+                const diffSecs = Math.floor(diffMs / 1000);
+                const hours = Math.floor(diffSecs / 3600);
+                const minutes = Math.floor((diffSecs % 3600) / 60);
+                const seconds = diffSecs % 60;
+                
+                timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                // Fall back to incrementing the current timer if no start time is available
+                const currentTime = timerElement.textContent.trim();
+                const [hours, minutes, seconds] = currentTime.split(':').map(Number);
+                
+                if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
+                    const totalSeconds = hours * 3600 + minutes * 60 + seconds + 1; // Add 1 for the next second
+                    const newHours = Math.floor(totalSeconds / 3600);
+                    const newMinutes = Math.floor((totalSeconds % 3600) / 60);
+                    const newSeconds = totalSeconds % 60;
+                    
+                    timerElement.textContent = `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}:${newSeconds.toString().padStart(2, '0')}`;
+                }
+            }
+        });
+    }, 1000);
 }
 
-function closeUserModal() {
-    userModal.classList.add('hidden')
-    userForm.reset()
-}
-
-async function handleUserSubmit(event) {
-    event.preventDefault()
-    showLoading()
-
-    const userId = document.getElementById('user-id').value
-    const email = document.getElementById('user-email').value
-    const role = document.getElementById('user-role').value
-    const assignee = document.getElementById('user-assignee').value
-
+async function changeEmployeeStatus(employeeEmail, newStatus) {
+    const employeeCard = document.querySelector(`.employee-card[data-email="${employeeEmail}"]`);
+    if (!employeeCard) return;
+    
+    // Show loading state on the card
+    employeeCard.style.opacity = '0.7';
+    employeeCard.style.pointerEvents = 'none';
+    
     try {
-        let error
-        if (userId) {
-            // Update existing user
-            ({ error } = await supabase
-                .from('requests_users')
-                .update({
-                    role,
-                    assignee,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('email', email))
-        } else {
-            // Create new user
-            ({ error } = await supabase
-                .from('requests_users')
-                .insert({
-                    email,
-                    role,
-                    assignee,
-                    status: 'active'
-                }))
-        }
-
-        if (error) throw error
-
-        closeUserModal()
-        await loadUsers()
-        await loadStatistics()
-        showSuccess(`User ${userId ? 'updated' : 'created'} successfully`)
-    } catch (error) {
-        console.error('Error saving user:', error)
-        showError('Failed to save user')
-    } finally {
-        hideLoading()
-    }
-}
-
-async function deleteUser(email) {
-    if (!confirm('Are you sure you want to delete this user?')) return
-
-    showLoading()
-    try {
-        const { error } = await supabase
+        // Use current timestamp for the update
+        const timestamp = new Date().toISOString();
+        
+        const { error } = await window.supabase
             .from('requests_users')
-            .delete()
-            .eq('email', email)
-
-        if (error) throw error
-
-        await loadUsers()
-        await loadStatistics()
-        showSuccess('User deleted successfully')
+            .update({ 
+                status: newStatus,
+                updated_at: timestamp 
+            })
+            .eq('email', employeeEmail);
+            
+        if (error) throw error;
+        
+        // Update card status without reloading
+        const statusBadge = employeeCard.querySelector('.status-badge');
+        if (statusBadge) {
+            statusBadge.className = `status-badge ${newStatus} px-3 py-1 rounded-full text-sm`;
+            statusBadge.textContent = formatStatus(newStatus);
+        }
+        
+        // Reset timer display and update the timestamp
+        const timerDisplay = employeeCard.querySelector('.timer-value');
+        if (timerDisplay) {
+            timerDisplay.textContent = '00:00:00'; // Reset timer display
+            timerDisplay.setAttribute('data-timestamp', timestamp); // Store new timestamp
+        }
+        
+        // Update localStorage with the new status and timestamp
+        const storedEmployees = JSON.parse(localStorage.getItem('employeeStats') || '[]');
+        const updatedEmployees = storedEmployees.map(e => {
+            if (e.email === employeeEmail) {
+                return {
+                    ...e,
+                    status: newStatus,
+                    statusTimestamp: timestamp
+                };
+            }
+            return e;
+        });
+        localStorage.setItem('employeeStats', JSON.stringify(updatedEmployees));
+        
+        // Update action buttons
+        const buttons = employeeCard.querySelectorAll('.action-buttons button');
+        buttons.forEach(button => {
+            const buttonStatus = button.textContent.trim().toLowerCase().includes('ready') ? 'ready' : 'break';
+            
+            if (buttonStatus === newStatus) {
+                button.className = 'btn btn-primary flex-1';
+            } else {
+                button.className = 'btn btn-outline-primary flex-1';
+            }
+        });
+        
+        showSuccess(`Employee status updated to ${formatStatus(newStatus)}`);
     } catch (error) {
-        console.error('Error deleting user:', error)
-        showError('Failed to delete user')
+        console.error('Error updating employee status:', error);
+        showError('Failed to update employee status');
     } finally {
-        hideLoading()
+        // Restore card appearance
+        employeeCard.style.opacity = '1';
+        employeeCard.style.pointerEvents = 'auto';
+    }
+}
+
+// Helper function to format status text
+function formatStatus(status) {
+    switch (status) {
+        case 'ready': return 'Ready';
+        case 'break': return 'On Break';
+        case 'active': return 'Active';
+        default: return status.charAt(0).toUpperCase() + status.slice(1);
     }
 }
 
@@ -381,12 +595,12 @@ function switchTab(tabName) {
     })
 
     requestsTab.classList.toggle('hidden', tabName !== 'requests')
-    usersTab.classList.toggle('hidden', tabName !== 'users')
+    employeesTab.classList.toggle('hidden', tabName !== 'employees')
 
     if (tabName === 'requests') {
         loadRequests()
     } else {
-        loadUsers()
+        loadEmployees()
     }
 }
 
@@ -418,4 +632,13 @@ function debounce(func, wait) {
         clearTimeout(timeout)
         timeout = setTimeout(later, wait)
     }
+}
+
+// Helper function to highlight changed cells with a subtle animation
+function highlightCell(cell) {
+    cell.style.transition = 'background-color 0.5s ease';
+    cell.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+    setTimeout(() => {
+        cell.style.backgroundColor = 'transparent';
+    }, 1000);
 } 
