@@ -1,3 +1,4 @@
+
 # Sales Dashboard
 
 A modern web application for managing sales requests with role-based access control, built with Next.js, Tailwind CSS, and Supabase.
@@ -41,7 +42,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd sales-dashboard
+cd requestsdashboard
 ```
 
 2. Install dependencies:
