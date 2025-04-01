@@ -48,6 +48,12 @@ async function handleRequestSubmit(event) {
     const notes = document.getElementById('notes').value
 
     try {
+        // Show loading indicator
+        const submitButton = event.target.querySelector('button[type="submit"]')
+        const originalButtonText = submitButton.innerHTML
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...'
+        submitButton.disabled = true
+        
         // Get available non-voice employee
         const { data: availableEmployee, error: employeeError } = await supabase
             .from('requests_users')
@@ -57,29 +63,52 @@ async function handleRequestSubmit(event) {
             .limit(1)
             .single()
 
-        const { error } = await supabase
+        // Set appropriate status based on assignment
+        // If an employee is assigned, set status to in-progress so it shows in their dashboard
+        // If no employee is assigned, set status to open
+        const status = availableEmployee?.assignee ? 'in-progress' : 'open'
+        const assigned_to = availableEmployee?.assignee || null
+
+        // Create new request
+        const { data: newRequest, error } = await supabase
             .from('requests')
             .insert([{
                 customer_name: customerName,
                 phone_number: customerPhone,
                 notes: notes,
-                status: 'open',
-                assigned_to: availableEmployee?.assignee || null,
+                status: status,
+                assigned_to: assigned_to,
                 sales_assignee: currentUser.assignee,
                 created_at: new Date().toISOString()
             }])
+            .select()
 
         if (error) throw error
 
+        // Notify user of success
+        submitButton.innerHTML = '<i class="fas fa-check mr-2"></i> Submitted!'
+        submitButton.classList.add('btn-success')
+        
         // Reset form and reload requests
-        event.target.reset()
-        loadMyRequests()
+        setTimeout(() => {
+            event.target.reset()
+            submitButton.innerHTML = originalButtonText
+            submitButton.classList.remove('btn-success')
+            submitButton.disabled = false
+            loadMyRequests()
+        }, 1500)
         
         // Show success message
-        alert('Request submitted successfully!')
+        alert('Request submitted successfully!' + 
+              (assigned_to ? ` Assigned to ${assigned_to}.` : ' No agents available at the moment.'))
     } catch (error) {
         console.error('Error submitting request:', error)
         alert('Error submitting request: ' + error.message)
+        
+        // Reset button
+        const submitButton = event.target.querySelector('button[type="submit"]')
+        submitButton.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Submit Request'
+        submitButton.disabled = false
     }
 }
 
@@ -114,7 +143,7 @@ async function loadMyRequests() {
                 <td>
                     <span class="status-pill status-${request.status}">
                         <i class="fas fa-${getStatusIcon(request.status)}"></i>
-                        ${request.status}
+                        ${formatRequestStatus(request.status)}
                     </span>
                 </td>
                 <td>${request.assigned_to || 'Unassigned'}</td>
@@ -153,7 +182,21 @@ function getStatusIcon(status) {
         case 'open': return 'door-open'
         case 'in-progress': return 'spinner'
         case 'completed': return 'check-circle'
+        case 'request-issue': return 'exclamation-triangle'
+        case 'waiting-request': return 'clock'
         default: return 'circle'
+    }
+}
+
+// Format request status name for better display
+function formatRequestStatus(status) {
+    switch (status) {
+        case 'open': return 'Open'
+        case 'in-progress': return 'In Progress'
+        case 'completed': return 'Done'
+        case 'request-issue': return 'Request Issue'
+        case 'waiting-request': return 'Waiting Request'
+        default: return status.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     }
 }
 
