@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Voice Statistics - Sales Support System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0/dist/chartjs-adapter-luxon.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .stats-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats-icon {
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-open {
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        .status-in-progress {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-request-issue {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .status-waiting-request {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .date-range-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Pagination styles */
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        #pagination-controls {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+        }
+
+        #pagination-info {
+            font-weight: 500;
+        }
+
+        /* Expandable row styles */
+        .clickable-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .clickable-row:hover {
+            background-color: #f9fafb;
+        }
+
+        .expanded-row {
+            background-color: #f3f4f6;
+        }
+
+        .expanded-content td {
+            padding: 0;
+        }
+
+        .notes-section {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .notes-card {
+            flex: 1;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .notes-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #4b5563;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <div id="app" class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-bar text-blue-600 text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold text-gray-800">Non-Voice Statistics</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-user text-gray-400"></i>
+                            <span id="user-name" class="text-gray-600 font-medium"></span>
+                        </div>
+                        <a href="non-voice.html" class="btn btn-secondary">
+                            <i class="fas fa-chevron-left mr-2"></i>
+                            Back to Dashboard
+                        </a>
+                        <button id="logout" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <!-- Date Range Selector -->
+            <div class="date-range-selector">
+                <div class="font-medium text-gray-700">Filter by date range:</div>
+                <select id="date-range" class="form-input">
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="week" selected>This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+                <div id="custom-range" class="hidden flex items-center space-x-2">
+                    <label class="text-sm text-gray-600">From:</label>
+                    <input type="date" id="date-from" class="form-input">
+                    <label class="text-sm text-gray-600">To:</label>
+                    <input type="date" id="date-to" class="form-input">
+                </div>
+                <button id="apply-filter" class="btn btn-primary">
+                    <i class="fas fa-filter mr-2"></i>
+                    Apply Filter
+                </button>
+            </div>
+
+            <!-- Statistics Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="stats-card">
+                    <div class="stats-icon bg-blue-100 text-blue-600">
+                        <i class="fas fa-check-circle text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">Completed Requests</h3>
+                    <p id="completed-count" class="text-2xl font-bold text-gray-900">0</p>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-icon bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">Waiting Requests</h3>
+                    <p id="waiting-count" class="text-2xl font-bold text-gray-900">0</p>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-icon bg-red-100 text-red-600">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">Issue Requests</h3>
+                    <p id="issue-count" class="text-2xl font-bold text-gray-900">0</p>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-icon bg-purple-100 text-purple-600">
+                        <i class="fas fa-hourglass-half text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">Avg. Processing Time</h3>
+                    <p id="avg-time" class="text-2xl font-bold text-gray-900">0 min</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Status Distribution Chart -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Request Status Distribution</h2>
+                    <div class="h-64">
+                        <canvas id="status-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Requests Over Time Chart -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Requests Over Time</h2>
+                    <div class="h-64">
+                        <canvas id="time-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request History Table -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">Request History</h2>
+                    <button id="export-csv" class="btn btn-secondary">
+                        <i class="fas fa-download mr-2"></i>
+                        Export to CSV
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Customer Name</th>
+                                <th>Status</th>
+                                <th>Completed On</th>
+                                <th>Processing Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table">
+                            <!-- Request history will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination-controls" class="flex justify-between items-center mt-6 hidden">
+                    <div id="pagination-info" class="text-sm text-gray-500">
+                        Showing 1-50 of 100 requests
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-page" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Previous
+                        </button>
+                        <button id="next-page" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-chevron-right mr-1"></i>
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://pdcssepqmgzpkayzfqta.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkY3NzZXBxbWd6cGtheXpmcXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MzczMjksImV4cCI6MjA1NjQxMzMyOX0.NqN7b7itdA8Tz0sG4fzSI4Y19P5syYFWnmKwANbH1IY'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        let currentUser = null
+        let statusChart = null
+        let timeChart = null
+        let completedRequests = []
+        let currentPage = 0
+        const pageSize = 50
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check session
+            const { data: { session }, error } = await supabase.auth.getSession()
+            if (error || !session) {
+                window.location.href = 'login.html'
+                return
+            }
+
+            // Get user data
+            const { data: userData, error: userError } = await supabase
+                .from('requests_users')
+                .select('*')
+                .eq('email', session.user.email)
+                .single()
+
+            if (userError || (userData.role !== 'non-voice' && userData.role !== 'admin')) {
+                window.location.href = 'login.html'
+                return
+            }
+
+            currentUser = { ...session.user, ...userData }
+            document.getElementById('user-name').textContent = currentUser.assignee
+            
+            // Set initial date range
+            setDefaultDateRange('week')
+            
+            // Add event listeners
+            document.getElementById('date-range').addEventListener('change', handleDateRangeChange)
+            document.getElementById('apply-filter').addEventListener('click', loadStatistics)
+            document.getElementById('export-csv').addEventListener('click', exportToCSV)
+            document.getElementById('logout').addEventListener('click', handleLogout)
+            document.getElementById('prev-page').addEventListener('click', prevPage)
+            document.getElementById('next-page').addEventListener('click', nextPage)
+            
+            // Load initial statistics
+            await loadStatistics()
+            
+            // Hide loading spinner
+            document.getElementById('loading').classList.add('hidden')
+        })
+
+        // Set default date range based on selection
+        function setDefaultDateRange(range) {
+            const today = new Date()
+            let fromDate = new Date()
+            
+            switch(range) {
+                case 'today':
+                    // Keep fromDate as today
+                    break
+                case 'yesterday':
+                    fromDate.setDate(today.getDate() - 1)
+                    break
+                case 'week':
+                    fromDate.setDate(today.getDate() - 7)
+                    break
+                case 'month':
+                    fromDate.setMonth(today.getMonth() - 1)
+                    break
+                default:
+                    fromDate.setDate(today.getDate() - 7)
+            }
+            
+            document.getElementById('date-from').valueAsDate = fromDate
+            document.getElementById('date-to').valueAsDate = today
+        }
+
+        // Handle date range dropdown change
+        function handleDateRangeChange() {
+            const range = document.getElementById('date-range').value
+            const customRange = document.getElementById('custom-range')
+            
+            if (range === 'custom') {
+                customRange.classList.remove('hidden')
+            } else {
+                customRange.classList.add('hidden')
+                setDefaultDateRange(range)
+            }
+        }
+
+        // Load statistics based on date range
+        async function loadStatistics() {
+            // Reset pagination when loading new data
+            currentPage = 0
+            
+            try {
+                const fromDate = document.getElementById('date-from').valueAsDate
+                const toDate = document.getElementById('date-to').valueAsDate
+                
+                // Add one day to toDate to include the entire day
+                const adjustedToDate = new Date(toDate)
+                adjustedToDate.setDate(adjustedToDate.getDate() + 1)
+                
+                // Format dates for Supabase query
+                const fromDateStr = fromDate.toISOString()
+                const toDateStr = adjustedToDate.toISOString()
+                
+                // Get completed requests directly from the requests table
+                // Filter for requests that have been processed by this employee
+                const { data: requestsData, error: requestsError } = await supabase
+                    .from('requests')
+                    .select('*')
+                    .eq('assigned_to', currentUser.assignee)
+                    .in('status', ['completed', 'request-issue', 'waiting-request'])
+                    .gte('updated_at', fromDateStr)
+                    .lt('updated_at', toDateStr)
+                    .order('updated_at', { ascending: false })
+                
+                if (requestsError) throw requestsError
+                
+                // Store the completed requests
+                completedRequests = requestsData
+                
+                // Update summary statistics
+                updateSummaryStats(completedRequests)
+                
+                // Update charts
+                updateStatusChart(completedRequests)
+                updateTimeChart(completedRequests)
+                
+                // Update history table
+                updateHistoryTable(completedRequests)
+            } catch (error) {
+                console.error('Error loading statistics:', error)
+                alert('Failed to load statistics')
+            }
+        }
+        
+        // Update summary statistics
+        function updateSummaryStats(data) {
+            const completedCount = data.filter(r => r.status === 'completed').length
+            const waitingCount = data.filter(r => r.status === 'waiting-request').length
+            const issueCount = data.filter(r => r.status === 'request-issue').length
+            
+            document.getElementById('completed-count').textContent = completedCount
+            document.getElementById('waiting-count').textContent = waitingCount
+            document.getElementById('issue-count').textContent = issueCount
+            
+            // Calculate average processing time (in minutes)
+            if (data.length > 0) {
+                const totalMinutes = data.reduce((total, request) => {
+                    if (request.created_at && request.updated_at) {
+                        const createdDate = new Date(request.created_at)
+                        const completedDate = new Date(request.updated_at)
+                        const diffMs = completedDate - createdDate
+                        return total + (diffMs / (1000 * 60)) // Convert ms to minutes
+                    }
+                    return total
+                }, 0)
+                
+                const avgMinutes = Math.round(totalMinutes / data.length)
+                document.getElementById('avg-time').textContent = `${avgMinutes} min`
+            } else {
+                document.getElementById('avg-time').textContent = '0 min'
+            }
+        }
+        
+        // Update status distribution chart
+        function updateStatusChart(data) {
+            const statusCounts = {
+                'completed': data.filter(r => r.status === 'completed').length,
+                'waiting-request': data.filter(r => r.status === 'waiting-request').length,
+                'request-issue': data.filter(r => r.status === 'request-issue').length
+            }
+            
+            const canvas = document.getElementById('status-chart')
+            
+            if (statusChart) {
+                statusChart.destroy()
+            }
+            
+            statusChart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Waiting', 'Issues'],
+                    datasets: [{
+                        data: [
+                            statusCounts.completed,
+                            statusCounts['waiting-request'],
+                            statusCounts['request-issue']
+                        ],
+                        backgroundColor: [
+                            '#10b981', // Green for completed
+                            '#6366f1', // Indigo for waiting
+                            '#ef4444'  // Red for issues
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            })
+        }
+        
+        // Update requests over time chart
+        function updateTimeChart(data) {
+            // Group data by date
+            const dateGroups = {}
+            
+            data.forEach(item => {
+                const date = new Date(item.updated_at).toLocaleDateString()
+                
+                if (!dateGroups[date]) {
+                    dateGroups[date] = {
+                        'completed': 0,
+                        'waiting-request': 0,
+                        'request-issue': 0
+                    }
+                }
+                
+                dateGroups[date][item.status]++
+            })
+            
+            // Convert to arrays for Chart.js
+            const dates = Object.keys(dateGroups).sort((a, b) => new Date(a) - new Date(b))
+            const completedData = dates.map(date => dateGroups[date].completed)
+            const waitingData = dates.map(date => dateGroups[date]['waiting-request'])
+            const issueData = dates.map(date => dateGroups[date]['request-issue'])
+            
+            const canvas = document.getElementById('time-chart')
+            
+            if (timeChart) {
+                timeChart.destroy()
+            }
+            
+            timeChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Completed',
+                            data: completedData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Waiting',
+                            data: waitingData,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Issues',
+                            data: issueData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Requests'
+                            },
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            })
+        }
+        
+        // Update history table
+        function updateHistoryTable(data) {
+            const historyTable = document.getElementById('history-table')
+            
+            if (!data || data.length === 0) {
+                historyTable.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-clipboard-list text-4xl mb-3"></i>
+                            <p>No completed requests in selected date range</p>
+                        </td>
+                    </tr>
+                `
+                // Hide pagination if no data
+                document.getElementById('pagination-controls').classList.add('hidden')
+                return
+            }
+            
+            // Show pagination controls
+            document.getElementById('pagination-controls').classList.remove('hidden')
+            
+            // Calculate pagination
+            const startIndex = currentPage * pageSize
+            const endIndex = Math.min(startIndex + pageSize, data.length)
+            const currentPageData = data.slice(startIndex, endIndex)
+            
+            // Update pagination text
+            document.getElementById('pagination-info').textContent = 
+                `Showing ${startIndex + 1}-${endIndex} of ${data.length} requests`
+            
+            // Update button states
+            document.getElementById('prev-page').disabled = currentPage === 0
+            document.getElementById('next-page').disabled = endIndex >= data.length
+            
+            // Generate HTML for each row and its expandable content
+            let tableHtml = '';
+            
+            currentPageData.forEach(item => {
+                // Calculate processing time
+                let processingTime = 'N/A'
+                if (item.created_at && item.updated_at) {
+                    const createdDate = new Date(item.created_at)
+                    const completedDate = new Date(item.updated_at)
+                    const diffMs = completedDate - createdDate
+                    const diffMins = Math.round(diffMs / (1000 * 60))
+                    processingTime = `${diffMins} min`
+                }
+                
+                // Add the main row
+                tableHtml += `
+                    <tr class="clickable-row animate-fade-in" onclick="toggleExpandedRow(this, '${item.id}')">
+                        <td class="font-medium">${item.id}</td>
+                        <td>${item.customer_name || 'N/A'}</td>
+                        <td>
+                            <span class="status-pill status-${item.status}">
+                                ${item.status}
+                            </span>
+                        </td>
+                        <td>${new Date(item.updated_at).toLocaleString()}</td>
+                        <td>${processingTime}</td>
+                    </tr>
+                    <tr class="expanded-content hidden" id="expanded-${item.id}">
+                        <td colspan="5">
+                            <div class="notes-section">
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-comment text-blue-500"></i>
+                                        Sales Notes
+                                    </div>
+                                    <p class="text-gray-600">${item.notes || 'No sales notes available'}</p>
+                                </div>
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-note-sticky text-green-500"></i>
+                                        Non-Voice Notes
+                                    </div>
+                                    <p class="text-gray-600">${item.non_voice_notes || 'No non-voice notes added yet'}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            historyTable.innerHTML = tableHtml;
+        }
+        
+        // Navigate to previous page
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--
+                updateHistoryTable(completedRequests)
+            }
+        }
+        
+        // Navigate to next page
+        function nextPage() {
+            const startIndex = (currentPage + 1) * pageSize
+            if (startIndex < completedRequests.length) {
+                currentPage++
+                updateHistoryTable(completedRequests)
+            }
+        }
+        
+        // Export data to CSV
+        function exportToCSV() {
+            if (!completedRequests || completedRequests.length === 0) {
+                alert('No data to export')
+                return
+            }
+            
+            // Create CSV content
+            let csvContent = 'Request ID,Customer Name,Phone Number,Status,Completed On,Processing Time (min),Notes\n'
+            
+            completedRequests.forEach(item => {
+                // Calculate processing time in minutes
+                let processingTime = 'N/A'
+                if (item.created_at && item.updated_at) {
+                    const createdDate = new Date(item.created_at)
+                    const completedDate = new Date(item.updated_at)
+                    const diffMs = completedDate - createdDate
+                    processingTime = Math.round(diffMs / (1000 * 60))
+                }
+                
+                // Format as CSV row, handle commas in text fields
+                const row = [
+                    item.id,
+                    item.customer_name ? `"${item.customer_name}"` : 'N/A',
+                    item.phone_number ? `"${item.phone_number}"` : 'N/A',
+                    item.status,
+                    new Date(item.updated_at).toLocaleString(),
+                    processingTime,
+                    `"${item.non_voice_notes || ''}"`
+                ]
+                
+                csvContent += row.join(',') + '\n'
+            })
+            
+            // Create download link
+            const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent)
+            const link = document.createElement('a')
+            link.setAttribute('href', encodedUri)
+            link.setAttribute('download', `request_history_${new Date().toISOString().split('T')[0]}.csv`)
+            document.body.appendChild(link)
+            
+            // Trigger download
+            link.click()
+            document.body.removeChild(link)
+        }
+        
+        // Handle logout
+        async function handleLogout() {
+            try {
+                const { error } = await supabase.auth.signOut()
+                if (error) throw error
+                window.location.href = 'login.html'
+            } catch (error) {
+                console.error('Error signing out:', error)
+                alert('Failed to sign out')
+            }
+        }
+        
+        // Toggle expanded row to show notes
+        function toggleExpandedRow(row, requestId) {
+            const expandedRow = document.getElementById(`expanded-${requestId}`)
+            const allExpandedRows = document.querySelectorAll('.expanded-content')
+            
+            // Close all other expanded rows
+            allExpandedRows.forEach(r => {
+                if (r.id !== `expanded-${requestId}`) {
+                    r.classList.add('hidden')
+                }
+            })
+
+            // Toggle clicked row
+            expandedRow.classList.toggle('hidden')
+            row.classList.toggle('expanded-row')
+        }
+    </script>
+</body>
+</html> 
