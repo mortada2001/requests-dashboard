@@ -79,6 +79,193 @@
             background-color: #f3f4f6;
             color: #6b7280;
         }
+        
+        .status-open {
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        .status-in-progress {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-request-issue {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .status-waiting-request {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .btn-disabled {
+            opacity: 0.8;
+            cursor: not-allowed;
+            background-color: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-disabled .fa-check-circle {
+            color: #10b981;
+        }
+        
+        .btn-disabled:hover {
+            background-color: #f3f4f6;
+        }
+        
+        /* Pagination styles */
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        #pagination-controls {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+        }
+        
+        #pagination-info {
+            font-weight: 500;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Status dropdown styles */
+        .status-dropdown {
+            position: relative;
+        }
+        
+        .status-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            z-index: 50;
+            min-width: 200px;
+            overflow: hidden;
+            animation: slideDown 0.2s ease-out;
+        }
+        
+        .status-menu-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-menu-item:hover {
+            background-color: #f9fafb;
+        }
+        
+        /* Enhanced sort selector */
+        .sort-selector {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .sort-selector:hover {
+            border-color: #d1d5db;
+        }
+        
+        .sort-selector select {
+            border: none;
+            background: transparent;
+            padding: 0.25rem;
+            font-size: 0.875rem;
+            color: #4b5563;
+            cursor: pointer;
+            margin-left: 0.25rem;
+            appearance: none;
+            padding-right: 1.5rem;
+        }
+        
+        .sort-selector .sort-icon {
+            color: #6b7280;
+            position: relative;
+            pointer-events: none;
+            right: 1.5rem;
+        }
+        
+        /* Status with timer */
+        .status-timer {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+        }
+        
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            z-index: 9999;
+            max-width: 350px;
+            animation: slideInRight 0.3s ease-out;
+            border-left: 4px solid #3b82f6;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            color: #1f2937;
+        }
+        
+        .notification-message {
+            font-size: 0.875rem;
+            color: #4b5563;
+            line-height: 1.4;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -86,6 +273,8 @@
         <div class="loading-spinner"></div>
         <p>Loading...</p>
     </div>
+
+    <div id="notification-container" class="fixed top-4 right-4 z-[9999] w-[350px] pointer-events-auto"></div>
 
     <div id="app" class="min-h-screen">
         <!-- Navigation -->
@@ -101,10 +290,31 @@
                             <i class="fas fa-user text-gray-400"></i>
                             <span id="user-name" class="text-gray-600 font-medium"></span>
                         </div>
-                        <span id="status-indicator" class="status-pill"></span>
+                        <div class="status-dropdown">
+                            <div id="status-indicator" class="status-pill cursor-pointer">
+                                <i class="fas fa-caret-down ml-1"></i>
+                            </div>
+                            <div id="status-menu" class="status-menu hidden">
+                                <div class="status-menu-item" data-status="ready">
+                                    <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                                    Ready
+                                </div>
+                                <div class="status-menu-item" data-status="break">
+                                    <i class="fas fa-coffee mr-2 text-orange-500"></i>
+                                    Break
+                                </div>
+                            </div>
+                        </div>
+                        <a href="non-voice-statistics.html" class="btn btn-primary flex items-center">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            My Statistics
+                        </a>
                         <button id="logout" class="btn btn-secondary">
                             <i class="fas fa-sign-out-alt mr-2"></i>
                             Logout
+                        </button>
+                        <button id="debug-status" class="ml-2 text-xs text-gray-400 hover:text-gray-600" style="font-size: 0.65rem; padding: 2px 4px; background: none; border: none;">
+                            Check
                         </button>
                     </div>
                 </div>
@@ -114,7 +324,7 @@
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <!-- Status Controls -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+            <!-- <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <i class="fas fa-circle-dot text-blue-500 mr-2"></i>
                     My Status
@@ -129,7 +339,7 @@
                         Break
                     </button>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Assigned Requests -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-fade-in">
@@ -138,10 +348,35 @@
                         <i class="fas fa-list-check text-blue-500 mr-2"></i>
                         Assigned Requests
                     </h2>
-                    <button id="refresh-btn" class="btn btn-secondary flex items-center">
-                        <i class="fas fa-sync-alt mr-2"></i>
-                        Refresh
-                    </button>
+                    <div class="flex items-center space-x-3">
+                        <div class="sort-selector">
+                            <i class="fas fa-sort-amount-down text-gray-500 text-sm"></i>
+                            <select id="sort-order" class="form-input py-1 px-3 text-sm">
+                                <option value="desc">Newest First</option>
+                                <option value="asc">Oldest First</option>
+                            </select>
+                            <i class="fas fa-chevron-down sort-icon"></i>
+                        </div>
+                        <button id="refresh-btn" class="btn btn-secondary flex items-center">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 text-sm">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-blue-700">
+                                <strong>Note:</strong> This table shows only <strong>in-progress</strong> requests assigned to you. 
+                                Requests marked as Completed, Request Issue, or Waiting Request are automatically removed from this view and 
+                                can be found in your <a href="non-voice-statistics.html" class="text-blue-600 underline">Statistics page</a>.
+                            </p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="table-container">
@@ -161,6 +396,23 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination Controls -->
+                <div id="pagination-controls" class="flex justify-between items-center mt-6 hidden">
+                    <div id="pagination-info" class="text-sm text-gray-500">
+                        Showing 1-50 of 100 requests
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-page" onclick="prevPage()" class="btn btn-secondary btn-sm" disabled>
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Previous
+                        </button>
+                        <button id="next-page" onclick="nextPage()" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-chevron-right mr-1"></i>
+                            Next
+                        </button>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -175,15 +427,17 @@
                 </div>
                 <form id="update-form">
                     <input type="hidden" id="request-id">
+                    <input type="hidden" id="original-status">
                     <div class="form-group">
                         <label class="form-label" for="status">
                             <i class="fas fa-tag text-gray-400 mr-2"></i>
                             Status
                         </label>
                         <select id="status" class="form-input">
-                            <option value="open">Open</option>
                             <option value="in-progress">In Progress</option>
-                            <option value="completed">Completed</option>
+                            <option value="completed">Done</option>
+                            <option value="request-issue">Request Issue</option>
+                            <option value="waiting-request">Waiting Request</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -212,68 +466,178 @@
         // Initialize Supabase client
         const supabaseUrl = 'https://pdcssepqmgzpkayzfqta.supabase.co'
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkY3NzZXBxbWd6cGtheXpmcXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MzczMjksImV4cCI6MjA1NjQxMzMyOX0.NqN7b7itdA8Tz0sG4fzSI4Y19P5syYFWnmKwANbH1IY'
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+            realtime: {
+                params: {
+                    eventsPerSecond: 10,
+                    realtimeTimeout: 50
+                }
+            },
+            db: {
+                schema: 'public'
+            },
+            global: {
+                headers: {
+                    'X-Client-Info': 'non-voice-dashboard'
+                }
+            }
+        })
 
         let currentUser = null
 
+        // Global pagination variables
+        let currentPage = 0;
+        let allRequests = [];
+        const pageSize = 50;
+        
+        // Status timer variables
+        let statusStartTime = null;
+        let statusTimer = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check session
-            const { data: { session }, error } = await supabase.auth.getSession()
-            if (error || !session) {
-                window.location.href = 'login.html'
-                return
+            try {
+                await checkSession()
+                
+                // If user's status is offline, set it to ready upon login
+                if (currentUser.status === 'offline') {
+                    await updateStatus('ready')
+                } else {
+                    updateStatusIndicator(currentUser.status)
+                    
+                    // If already ready, check for unassigned requests
+                    if (currentUser.status === 'ready') {
+                        await assignUnassignedRequests()
+                    }
+                }
+                
+                // Initialize status timer
+                initializeStatusTimer();
+                
+                // Set up status dropdown click handler
+                document.getElementById('status-indicator').addEventListener('click', toggleStatusMenu);
+                
+                // Set up status menu item click handlers
+                document.querySelectorAll('.status-menu-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const status = e.currentTarget.getAttribute('data-status');
+                        updateStatus(status);
+                        toggleStatusMenu(); // Close menu after selection
+                    });
+                });
+                
+                // Set up subscriptions
+                setupSubscriptions();
+                
+                loadAssignedRequests()
+
+                // Hide loading spinner
+                document.getElementById('loading').classList.add('hidden')
+                
+                // Set up event listeners for other UI elements
+                document.getElementById('refresh-btn').addEventListener('click', loadAssignedRequests)
+                document.getElementById('sort-order').addEventListener('change', loadAssignedRequests)
+                document.getElementById('logout').addEventListener('click', handleLogout)
+                
+                // Debug button to check status
+                document.getElementById('debug-status').addEventListener('click', async () => {
+                    try {
+                        console.log("Debug: Checking current user status...");
+                        await checkUserStatus();
+                    } catch (err) {
+                        console.error("Debug: Unexpected error", err);
+                    }
+                });
+                
+                // Set up periodic check for unassigned requests
+                setInterval(async () => {
+                    if (currentUser && currentUser.status === 'ready') {
+                        await assignUnassignedRequests();
+                    }
+                }, 60000); // Check every minute
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                alert('Failed to initialize dashboard: ' + error.message);
             }
-
-            // Get user data
-            const { data: userData, error: userError } = await supabase
-                .from('requests_users')
-                .select('*')
-                .eq('email', session.user.email)
-                .single()
-
-            if (userError || (userData.role !== 'non-voice' && userData.role !== 'admin')) {
-                window.location.href = 'login.html'
-                return
-            }
-
-            currentUser = { ...session.user, ...userData }
-            document.getElementById('user-name').textContent = currentUser.assignee
-            
-            // Set default status if it's null or undefined
-            if (!currentUser.status) {
-                currentUser.status = 'offline'
-                // Update status in database
-                await supabase
-                    .from('requests_users')
-                    .update({ status: 'offline' })
-                    .eq('email', currentUser.email)
-            }
-            
-            updateStatusIndicator(currentUser.status)
-            loadAssignedRequests()
-
-            // Hide loading spinner
-            document.getElementById('loading').classList.add('hidden')
         })
 
-        // Event Listeners
-        document.getElementById('ready-btn').addEventListener('click', () => updateStatus('ready'))
-        document.getElementById('break-btn').addEventListener('click', () => updateStatus('break'))
-        document.getElementById('refresh-btn').addEventListener('click', loadAssignedRequests)
-        document.getElementById('logout').addEventListener('click', handleLogout)
+        // Toggle status dropdown menu
+        function toggleStatusMenu() {
+            const menu = document.getElementById('status-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Initialize status timer
+        function initializeStatusTimer() {
+            // Reset any existing timer
+            if (statusTimer) {
+                clearInterval(statusTimer);
+            }
+            
+            // Get the updated_at timestamp for the current status
+            if (currentUser && currentUser.updated_at) {
+                statusStartTime = new Date(currentUser.updated_at);
+            } else {
+                // Fallback to current time if no timestamp is available
+                statusStartTime = new Date();
+            }
+            
+            // Start the timer
+            statusTimer = setInterval(updateStatusTime, 1000);
+        }
+        
+        // Update the status timer display
+        function updateStatusTime() {
+            if (!statusStartTime) return;
+            
+            const now = new Date();
+            const diffMs = now - statusStartTime;
+            
+            // Convert to hours, minutes, seconds
+            const diffSecs = Math.floor(diffMs / 1000);
+            const hours = Math.floor(diffSecs / 3600);
+            const minutes = Math.floor((diffSecs % 3600) / 60);
+            const seconds = diffSecs % 60;
+            
+            // Format as HH:MM:SS
+            const timeString = [
+                hours.toString().padStart(2, '0'),
+                minutes.toString().padStart(2, '0'),
+                seconds.toString().padStart(2, '0')
+            ].join(':');
+            
+            // Add or update timer in status indicator
+            let timerEl = document.querySelector('.status-timer');
+            
+            if (!timerEl) {
+                timerEl = document.createElement('div');
+                timerEl.className = 'status-timer';
+                document.getElementById('status-indicator').appendChild(timerEl);
+            }
+            
+            timerEl.textContent = timeString;
+        }
 
         // Update status
         async function updateStatus(status) {
             try {
+                const now = new Date().toISOString();
+                
                 const { error } = await supabase
                     .from('requests_users')
-                    .update({ status })
+                    .update({ 
+                        status,
+                        updated_at: now
+                    })
                     .eq('email', currentUser.email)
 
                 if (error) throw error
 
                 currentUser.status = status
+                currentUser.updated_at = now
                 updateStatusIndicator(status)
+                
+                // Reset status timer
+                initializeStatusTimer();
                 
                 if (status === 'break') {
                     // If going on break, reassign requests
@@ -290,88 +654,154 @@
 
         // Update status indicator
         function updateStatusIndicator(status) {
+            console.log("Updating status indicator to:", status);
             const indicator = document.getElementById('status-indicator')
             // Handle null or undefined status by setting a default value
             if (!status) {
                 status = 'offline'
+                console.log("Status was null/undefined, defaulting to offline");
             }
-            indicator.textContent = status.charAt(0).toUpperCase() + status.slice(1)
-            indicator.className = `status-pill status-${status}`
+            
+            // Clear any existing content
+            indicator.innerHTML = '';
+            
+            // Create status text with icon
+            const statusText = document.createElement('span');
+            statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            
+            // Add icon based on status
+            const icon = document.createElement('i');
+            if (status === 'ready') {
+                icon.className = 'fas fa-check-circle mr-2';
+            } else if (status === 'break') {
+                icon.className = 'fas fa-coffee mr-2';
+            } else {
+                icon.className = 'fas fa-circle mr-2';
+            }
+            
+            // Add dropdown caret
+            const caret = document.createElement('i');
+            caret.className = 'fas fa-caret-down ml-1';
+            
+            // Assemble the indicator
+            indicator.appendChild(icon);
+            indicator.appendChild(statusText);
+            indicator.appendChild(caret);
+            
+            // Set appropriate class
+            indicator.className = `status-pill status-${status} cursor-pointer`;
+            console.log("Status indicator updated successfully with class:", `status-pill status-${status} cursor-pointer`);
+            
+            // If timer was running, add it back
+            if (statusStartTime) {
+                updateStatusTime();
+            }
         }
 
         // Load assigned requests
         async function loadAssignedRequests() {
             try {
+                // Get sort order from dropdown
+                const sortOrder = document.getElementById('sort-order').value;
+                
                 const { data: requests, error } = await supabase
                     .from('requests')
                     .select('*')
                     .eq('assigned_to', currentUser.assignee)
-                    .order('created_at', { ascending: false })
+                    // Only show in-progress requests in the main table
+                    .eq('status', 'in-progress')
+                    .order('created_at', { ascending: sortOrder === 'asc' })
 
                 if (error) throw error
 
-                const requestsTable = document.getElementById('requests-table')
+                // Store all requests for pagination
+                allRequests = requests || [];
                 
-                if (!requests || requests.length === 0) {
-                    requestsTable.innerHTML = `
-                        <tr>
-                            <td colspan="6" class="text-center py-8 text-gray-500">
-                                <i class="fas fa-inbox text-4xl mb-3"></i>
-                                <p>No requests assigned</p>
-                            </td>
-                        </tr>
-                    `
-                    return
-                }
-
-                requestsTable.innerHTML = requests.map(request => `
-                    <tr class="clickable-row animate-fade-in" onclick="toggleExpandedRow(this, '${request.id}')">
-                        <td class="font-medium text-gray-900">${request.customer_name || ''}</td>
-                        <td>${request.phone_number || ''}</td>
-                        <td>
-                            <span class="status-pill status-${request.status}">
-                                <i class="fas fa-${getStatusIcon(request.status)}"></i>
-                                ${request.status}
-                            </span>
-                        </td>
-                        <td>${request.sales_assignee || ''}</td>
-                        <td>${formatDate(request.created_at)}</td>
-                        <td>
-                            <button 
-                                onclick="event.stopPropagation(); openUpdateModal('${request.id}')" 
-                                class="btn btn-update"
-                                title="Update request status and notes"
-                            >
-                                <i class="fas fa-edit mr-1"></i>
-                                Update
-                            </button>
-                        </td>
-                    </tr>
-                    <tr class="expanded-content hidden" id="expanded-${request.id}">
-                        <td colspan="6">
-                            <div class="notes-section">
-                                <div class="notes-card">
-                                    <div class="notes-title">
-                                        <i class="fas fa-comment text-blue-500"></i>
-                                        Sales Notes
-                                    </div>
-                                    <p class="text-gray-600">${request.notes || 'No sales notes available'}</p>
-                                </div>
-                                <div class="notes-card">
-                                    <div class="notes-title">
-                                        <i class="fas fa-note-sticky text-green-500"></i>
-                                        Non-Voice Notes
-                                    </div>
-                                    <p class="text-gray-600">${request.non_voice_notes || 'No non-voice notes added yet'}</p>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('')
+                // Display the current page
+                displayCurrentPage();
             } catch (error) {
                 console.error('Error loading requests:', error)
                 alert('Failed to load requests')
             }
+        }
+
+        // Display current page of results
+        function displayCurrentPage() {
+            const requestsTable = document.getElementById('requests-table');
+            const startIndex = currentPage * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, allRequests.length);
+            const currentPageData = allRequests.slice(startIndex, endIndex);
+            
+            if (!currentPageData || currentPageData.length === 0) {
+                requestsTable.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-3"></i>
+                            <p>No requests assigned</p>
+                        </td>
+                    </tr>
+                `;
+                
+                // Hide pagination if no data
+                document.getElementById('pagination-controls').classList.add('hidden');
+                return;
+            }
+            
+            // Show pagination controls
+            document.getElementById('pagination-controls').classList.remove('hidden');
+            
+            // Update pagination text
+            document.getElementById('pagination-info').textContent = 
+                `Showing ${startIndex + 1}-${endIndex} of ${allRequests.length} requests`;
+            
+            // Update button states
+            document.getElementById('prev-page').disabled = currentPage === 0;
+            document.getElementById('next-page').disabled = endIndex >= allRequests.length;
+
+            requestsTable.innerHTML = currentPageData.map(request => `
+                <tr class="clickable-row animate-fade-in" onclick="toggleExpandedRow(this, '${request.id}')">
+                    <td class="font-medium text-gray-900">${request.customer_name || ''}</td>
+                    <td>${request.phone_number || ''}</td>
+                    <td>
+                        <span class="status-pill status-${request.status}">
+                            <i class="fas fa-${getStatusIcon(request.status)}"></i>
+                            ${formatRequestStatus(request.status)}
+                        </span>
+                    </td>
+                    <td>${request.sales_assignee || ''}</td>
+                    <td>${formatDate(request.created_at)}</td>
+                    <td>
+                        <button 
+                            onclick="event.stopPropagation(); openUpdateModal('${request.id}')" 
+                            class="btn btn-update"
+                            title="Update request status and notes"
+                        >
+                            <i class="fas fa-edit mr-1"></i>
+                            Update
+                        </button>
+                    </td>
+                </tr>
+                <tr class="expanded-content hidden" id="expanded-${request.id}">
+                    <td colspan="6">
+                        <div class="notes-section">
+                            <div class="notes-card">
+                                <div class="notes-title">
+                                    <i class="fas fa-comment text-blue-500"></i>
+                                    Sales Notes
+                                </div>
+                                <p class="text-gray-600">${request.notes || 'No sales notes available'}</p>
+                            </div>
+                            <div class="notes-card">
+                                <div class="notes-title">
+                                    <i class="fas fa-note-sticky text-green-500"></i>
+                                    Non-Voice Notes
+                                </div>
+                                <p class="text-gray-600">${request.non_voice_notes || 'No non-voice notes added yet'}</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         // Helper function to get status icon
@@ -380,6 +810,8 @@
                 case 'open': return 'door-open'
                 case 'in-progress': return 'spinner'
                 case 'completed': return 'check-circle'
+                case 'request-issue': return 'exclamation-triangle'
+                case 'waiting-request': return 'clock'
                 default: return 'circle'
             }
         }
@@ -466,7 +898,11 @@
                 // Update all unassigned requests to be assigned to current user
                 const { error: updateError } = await supabase
                     .from('requests')
-                    .update({ assigned_to: currentUser.assignee })
+                    .update({ 
+                        assigned_to: currentUser.assignee,
+                        status: 'in-progress',
+                        updated_at: new Date().toISOString()
+                    })
                     .is('assigned_to', null)
                     .eq('status', 'open')
 
@@ -474,6 +910,9 @@
 
                 // Reload the requests table
                 loadAssignedRequests()
+                
+                // Show notification about new assignments
+                showStatusChangeNotification('assigned', unassignedRequests.length)
             } catch (error) {
                 console.error('Error assigning unassigned requests:', error)
                 alert('Failed to assign unassigned requests')
@@ -493,8 +932,41 @@
 
                 // Store the request ID and populate form fields
                 document.getElementById('request-id').value = requestId
-                document.getElementById('status').value = request.status || 'open'
+                document.getElementById('status').value = request.status || 'in-progress'
                 document.getElementById('non-voice-notes').value = request.non_voice_notes || ''
+                document.getElementById('original-status').value = request.status || 'in-progress'
+                
+                // Add status change warning if needed
+                const statusSelect = document.getElementById('status')
+                const warningContainer = document.querySelector('.status-warning')
+                
+                if (warningContainer) {
+                    warningContainer.remove()
+                }
+                
+                if (request.status === 'in-progress') {
+                    const warningDiv = document.createElement('div')
+                    warningDiv.className = 'status-warning text-amber-600 text-xs mt-1'
+                    warningDiv.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> Changing status will remove this request from your active list'
+                    statusSelect.parentNode.appendChild(warningDiv)
+                    
+                    // Add event listener to status select
+                    statusSelect.addEventListener('change', function() {
+                        const warningElem = document.querySelector('.status-warning')
+                        if (this.value !== 'in-progress') {
+                            if (!warningElem) {
+                                const newWarning = document.createElement('div')
+                                newWarning.className = 'status-warning text-amber-600 text-xs mt-1'
+                                newWarning.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> This request will be removed from your active list'
+                                this.parentNode.appendChild(newWarning)
+                            }
+                        } else {
+                            if (warningElem) {
+                                warningElem.remove()
+                            }
+                        }
+                    })
+                }
                 
                 // Show modal with animation
                 const modal = document.getElementById('update-modal')
@@ -509,7 +981,7 @@
                 })
             } catch (error) {
                 console.error('Error loading request:', error)
-                alert('Failed to load request details')
+                showNotification('Failed to load request details', 'error')
             }
         }
 
@@ -517,7 +989,23 @@
         function closeModal() {
             const modal = document.getElementById('update-modal')
             modal.classList.add('hidden')
+            
+            // Remove event listeners
+            const statusSelect = document.getElementById('status')
+            if (statusSelect) {
+                // Clone and replace to remove event listeners
+                const newStatusSelect = statusSelect.cloneNode(true)
+                statusSelect.parentNode.replaceChild(newStatusSelect, statusSelect)
+            }
+            
+            // Reset form
             document.getElementById('update-form').reset()
+            
+            // Remove any warnings
+            const warningContainer = document.querySelector('.status-warning')
+            if (warningContainer) {
+                warningContainer.remove()
+            }
         }
 
         // Handle update form submission
@@ -527,8 +1015,16 @@
             const requestId = document.getElementById('request-id').value
             const status = document.getElementById('status').value
             const nonVoiceNotes = document.getElementById('non-voice-notes').value
+            const originalStatus = document.getElementById('original-status').value
 
             try {
+                // Show loading state
+                const submitButton = e.target.querySelector('button[type="submit"]')
+                const originalButtonText = submitButton.innerHTML
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Updating...'
+                submitButton.disabled = true
+
+                // Update the request with new status and notes
                 const { error } = await supabase
                     .from('requests')
                     .update({
@@ -540,27 +1036,470 @@
 
                 if (error) throw error
 
-                closeModal()
-                await loadAssignedRequests()
+                // Provide visual feedback
+                submitButton.innerHTML = '<i class="fas fa-check mr-2"></i> Updated!'
+                submitButton.className = 'btn btn-success'
                 
-                // Show success message
-                alert('Request updated successfully!')
+                setTimeout(() => {
+                    // Close modal after a brief delay to show success state
+                    closeModal()
+                    
+                    // Reload the requests table
+                    loadAssignedRequests()
+                    
+                    // Provide appropriate message based on status change
+                    let message = 'Request updated successfully!'
+                    if (originalStatus === 'in-progress' && status !== 'in-progress') {
+                        message += ' The request will no longer appear in your active requests list but can be viewed in your statistics page.'
+                    }
+                    
+                    // Show success message
+                    showNotification(message, 'success')
+                }, 1000)
             } catch (error) {
                 console.error('Error updating request:', error)
-                alert('Failed to update request: ' + error.message)
+                
+                // Reset button state
+                const submitButton = e.target.querySelector('button[type="submit"]')
+                submitButton.innerHTML = originalButtonText
+                submitButton.disabled = false
+                
+                // Show error message
+                showNotification('Failed to update request: ' + error.message, 'error')
             }
         })
 
         // Handle logout
         async function handleLogout() {
             try {
+                // First, set user status to offline
+                await updateStatus('offline')
+                
+                // Reassign all in-progress requests to other available employees or set them to open
+                await reassignInProgressRequests()
+                
+                // Then sign out
                 const { error } = await supabase.auth.signOut()
                 if (error) throw error
+                
                 window.location.href = 'login.html'
             } catch (error) {
                 console.error('Error signing out:', error)
                 alert('Failed to sign out')
             }
+        }
+
+        // Reassign in-progress requests when logging out
+        async function reassignInProgressRequests() {
+            try {
+                // Get available non-voice employee
+                const { data: availableEmployee, error: employeeError } = await supabase
+                    .from('requests_users')
+                    .select('assignee')
+                    .eq('role', 'non-voice')
+                    .eq('status', 'ready')
+                    .neq('email', currentUser.email)
+                    .limit(1)
+                    .single()
+
+                if (!availableEmployee || employeeError) {
+                    // If no available employee, set requests to open with no assignment
+                    const { error: updateError } = await supabase
+                        .from('requests')
+                        .update({ 
+                            status: 'open',
+                            assigned_to: null
+                        })
+                        .eq('assigned_to', currentUser.assignee)
+                        .eq('status', 'in-progress')
+
+                    if (updateError) throw updateError
+                } else {
+                    // If available employee found, reassign requests to them
+                    const { error: updateError } = await supabase
+                        .from('requests')
+                        .update({ 
+                            assigned_to: availableEmployee.assignee
+                        })
+                        .eq('assigned_to', currentUser.assignee)
+                        .eq('status', 'in-progress')
+
+                    if (updateError) throw updateError
+                }
+            } catch (error) {
+                console.error('Error reassigning in-progress requests:', error)
+                // Don't alert here as we're logging out anyway
+            }
+        }
+
+        // Navigate to previous page
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                displayCurrentPage();
+            }
+        }
+
+        // Navigate to next page
+        function nextPage() {
+            const startIndex = (currentPage + 1) * pageSize;
+            if (startIndex < allRequests.length) {
+                currentPage++;
+                displayCurrentPage();
+            }
+        }
+
+        // Show status change notification
+        function showStatusChangeNotification(status, count = null) {
+            console.log("Showing notification for status change to:", status);
+            
+            // Remove any existing notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notification => {
+                notification.remove();
+            });
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            
+            // Set icon and color based on status
+            let icon, color, title, message;
+            
+            if (status === 'ready') {
+                icon = 'check-circle';
+                color = 'green';
+                title = 'Status Updated';
+                message = 'Your status has been changed to <strong>Ready</strong>';
+            } else if (status === 'break') {
+                icon = 'coffee';
+                color = 'orange';
+                title = 'Status Updated';
+                message = 'Your status has been changed to <strong>Break</strong>';
+            } else if (status === 'assigned') {
+                icon = 'tasks';
+                color = 'blue';
+                title = 'New Assignments';
+                message = `<strong>${count}</strong> new ${count === 1 ? 'request has' : 'requests have'} been assigned to you`;
+            } else {
+                icon = 'circle';
+                color = 'blue';
+                title = 'Status Updated';
+                const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+                message = `Your status has been changed to <strong>${statusText}</strong>`;
+            }
+            
+            if (status === 'assigned') {
+                notification.style.borderLeft = '4px solid #3b82f6';
+            }
+            
+            notification.innerHTML = `
+                <div class="notification-title">
+                    <i class="fas fa-${icon} text-${color}-500"></i>
+                    ${title}
+                </div>
+                <p class="notification-message">
+                    ${message}${status !== 'assigned' ? ' by an admin' : ''}.
+                </p>
+                <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onclick="this.parentNode.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // Check if notification container exists
+            const container = document.getElementById('notification-container');
+            if (!container) {
+                console.error("Notification container not found in DOM");
+                return;
+            }
+            
+            // Add to container
+            container.appendChild(notification);
+            console.log("Notification added to container");
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // Check user status from database
+        async function checkUserStatus() {
+            try {
+                // Only check if there's a current user
+                if (!currentUser || !currentUser.email) return;
+                
+                console.log("Periodic check: Checking current user status...");
+                
+                // Fetch fresh user data from the database
+                const { data: userData, error } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('email', currentUser.email)
+                    .single();
+                    
+                if (error) {
+                    console.error("Periodic check: Error fetching user data", error);
+                    return;
+                }
+                
+                // Check if status has changed
+                if (userData.status !== currentUser.status) {
+                    console.log(`Periodic check: Status mismatch detected! DB: ${userData.status}, Local: ${currentUser.status}`);
+                    
+                    // Update local user object
+                    currentUser.status = userData.status;
+                    currentUser.updated_at = userData.updated_at;
+                    
+                    // Update UI
+                    updateStatusIndicator(userData.status);
+                    initializeStatusTimer();
+                    
+                    // Show notification
+                    showStatusChangeNotification(userData.status);
+                } else {
+                    console.log("Periodic check: Status is in sync");
+                }
+            } catch (err) {
+                console.error("Periodic check: Unexpected error", err);
+            }
+        }
+
+        // Update request status to in-progress when assigned
+        async function updateRequestToInProgress(requestId) {
+            try {
+                const { error } = await supabase
+                    .from('requests')
+                    .update({ 
+                        status: 'in-progress',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', requestId)
+
+                if (error) throw error
+                console.log(`Updated request ${requestId} to in-progress status`)
+            } catch (error) {
+                console.error('Error updating request status:', error)
+            }
+        }
+
+        // Format request status
+        function formatRequestStatus(status) {
+            switch (status) {
+                case 'open': return 'Open'
+                case 'in-progress': return 'In Progress'
+                case 'completed': return 'Completed'
+                case 'request-issue': return 'Request Issue'
+                case 'waiting-request': return 'Waiting Request'
+                default: return status.charAt(0).toUpperCase() + status.slice(1)
+            }
+        }
+
+        // Set up all subscriptions
+        function setupSubscriptions() {
+            // Close status menu when clicking outside
+            document.addEventListener('click', (e) => {
+                const statusDropdown = document.querySelector('.status-dropdown');
+                const statusMenu = document.getElementById('status-menu');
+                
+                if (statusDropdown && !statusDropdown.contains(e.target) && !statusMenu.classList.contains('hidden')) {
+                    statusMenu.classList.add('hidden');
+                }
+            });
+            
+            // Subscribe to real-time updates for the current user's status
+            console.log("Setting up status subscription for email:", currentUser.email);
+            const userStatusSubscription = supabase
+                .channel('user-status-' + currentUser.email.replace('@', '-'))
+                .on('postgres_changes', 
+                    { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'requests_users',
+                        filter: `email=eq."${currentUser.email}"`
+                    }, 
+                    (payload) => {
+                        console.log('Status update received:', payload);
+                        
+                        if (payload.new) {
+                            console.log(`Database status: ${payload.new.status}, Local status: ${currentUser.status}`);
+                            
+                            // Check if status has changed
+                            if (payload.new.status !== currentUser.status) {
+                                console.log(`Status changed from ${currentUser.status} to ${payload.new.status}`);
+                                
+                                // Update the current user object
+                                currentUser.status = payload.new.status;
+                                currentUser.updated_at = payload.new.updated_at;
+                                
+                                // Update the UI
+                                updateStatusIndicator(currentUser.status);
+                                
+                                // Reset the timer
+                                initializeStatusTimer();
+                                
+                                // Show a notification to the user
+                                showStatusChangeNotification(currentUser.status);
+                            } else {
+                                console.log('Status is the same, no update needed');
+                            }
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    console.log("Subscription status:", status);
+                    
+                    // Set up a periodic status check as a fallback
+                    setInterval(checkUserStatus, 10000); // Check every 10 seconds
+                });
+            
+            // Subscribe to request changes where user is assigned
+            console.log("Setting up request subscription for assignee:", currentUser.assignee);
+            const requestsSubscription = supabase
+                .channel('user-requests-' + currentUser.assignee.replace(/\s+/g, '-').toLowerCase())
+                .on('postgres_changes',
+                    {
+                        event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
+                        schema: 'public',
+                        table: 'requests',
+                        filter: `assigned_to=eq."${currentUser.assignee}"`
+                    },
+                    (payload) => {
+                        console.log('Request update received:', payload);
+                        loadAssignedRequests();
+                    }
+                )
+                .subscribe((status) => {
+                    console.log("Request subscription status:", status);
+                    
+                    // Set up periodic request refresh as a fallback
+                    setInterval(() => {
+                        console.log("Periodic request refresh");
+                        loadAssignedRequests();
+                    }, 30000); // Refresh every 30 seconds
+                });
+            
+            // Subscribe to open request changes that may need assignment
+            console.log("Setting up open requests subscription");
+            const openRequestsSubscription = supabase
+                .channel('open-requests')
+                .on('postgres_changes',
+                    {
+                        event: 'INSERT', 
+                        schema: 'public',
+                        table: 'requests',
+                        filter: `status=eq.open`
+                    },
+                    (payload) => {
+                        console.log('New open request detected:', payload);
+                        
+                        // If user is ready, try to assign it
+                        if (currentUser && currentUser.status === 'ready') {
+                            assignUnassignedRequests();
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    console.log("Open requests subscription status:", status);
+                });
+        }
+
+        // Check session
+        async function checkSession() {
+            const { data: { session }, error } = await supabase.auth.getSession()
+            if (error || !session) {
+                window.location.href = 'login.html'
+                return
+            }
+
+            // Get user data
+            const { data: userData, error: userError } = await supabase
+                .from('requests_users')
+                .select('*')
+                .eq('email', session.user.email)
+                .single()
+
+            if (userError || (userData.role !== 'non-voice' && userData.role !== 'admin')) {
+                window.location.href = 'login.html'
+                return
+            }
+
+            currentUser = { ...session.user, ...userData }
+            document.getElementById('user-name').textContent = currentUser.assignee
+            
+            // Set default status if it's null or undefined
+            if (!currentUser.status) {
+                currentUser.status = 'offline'
+                // Update status in database
+                await supabase
+                    .from('requests_users')
+                    .update({ status: 'offline' })
+                    .eq('email', currentUser.email)
+            }
+            
+            return true;
+        }
+
+        // Show notifications for general messages
+        function showNotification(message, type = 'info') {
+            // Remove any existing notifications with the same type
+            const existingNotifications = document.querySelectorAll(`.notification.notification-${type}`);
+            existingNotifications.forEach(notification => {
+                notification.remove();
+            });
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            
+            // Set icon and color based on type
+            let icon, color, title;
+            
+            if (type === 'success') {
+                icon = 'check-circle';
+                color = 'green';
+                title = 'Success';
+            } else if (type === 'error') {
+                icon = 'exclamation-circle';
+                color = 'red';
+                title = 'Error';
+            } else {
+                icon = 'info-circle';
+                color = 'blue';
+                title = 'Information';
+            }
+            
+            notification.innerHTML = `
+                <div class="notification-title">
+                    <i class="fas fa-${icon} text-${color}-500"></i>
+                    ${title}
+                </div>
+                <p class="notification-message">
+                    ${message}
+                </p>
+                <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onclick="this.parentNode.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // Check if notification container exists
+            const container = document.getElementById('notification-container');
+            if (!container) {
+                console.error("Notification container not found in DOM");
+                return;
+            }
+            
+            // Add to container
+            container.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
         }
     </script>
 </body>
