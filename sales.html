@@ -51,6 +51,43 @@
         .clickable-row:hover {
             background-color: #f1f5f9;
         }
+        
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-open {
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        .status-in-progress {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-request-issue {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .status-waiting-request {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
