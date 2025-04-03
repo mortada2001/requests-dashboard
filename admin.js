@@ -3,6 +3,14 @@ let currentUser = null;
 let employees = []; // Store employees for use in forms
 let notificationsEnabled = true; // Default is notifications enabled
 
+// DOM elements for statistics
+const totalRequestsElement = document.getElementById('total-requests');
+const openRequestsElement = document.getElementById('open-requests');
+const inProgressRequestsElement = document.getElementById('in-progress-requests');
+const completedRequestsElement = document.getElementById('completed-requests');
+const readyUsersElement = document.getElementById('ready-users');
+const breakUsersElement = document.getElementById('break-users');
+
 // Initialize pagination state
 let requestsState = {
     currentPage: 1,
@@ -25,6 +33,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Initialize employee view toggle
         initializeEmployeeView()
+        
+        // Set up auto-refresh for statistics
+        setInterval(refreshStatistics, 30000) // Refresh every 30 seconds
+        
+        // Set up auto-refresh for employee cards
+        setInterval(refreshEmployeeCards, 60000) // Refresh every minute
+        
+        // Add event listener for date filter
+        document.getElementById('filter-date')?.addEventListener('change', debounce(loadRequests, 300));
     } catch (error) {
         console.error('Error initializing dashboard:', error)
         showError('Failed to initialize dashboard')
@@ -177,49 +194,76 @@ function debounce(func, wait) {
 // Load requests
 async function loadRequests() {
     try {
-        // Update sort order from select 
-        requestsState.sortOrder = document.getElementById('sort-order')?.value || 'newest';
-        
-        // Build query based on filters
-        let query = window.supabase
-            .from('requests')
-            .select('*');
-            
-        const statusFilter = document.getElementById('filter-status').value;
+        // Get UI filter values
         const searchTerm = document.getElementById('search-requests').value.trim();
+        const statusFilter = document.getElementById('filter-status').value;
+        const dateFilter = document.getElementById('filter-date').value;
+        const sortOrder = document.getElementById('sort-order').value;
 
+        // Save sort order state for use after filtering
+        requestsState.sortOrder = sortOrder;
+
+        // Build query with filters
+        let query = window.supabase.from('requests').select('*');
+
+        // Apply status filter if selected
         if (statusFilter) {
-            // Special handling for "completed" filter to include all "done" types
-            if (statusFilter === 'completed') {
-                query = query.or('status.eq.completed,status.eq.waiting-request,status.eq.request-issue');
+            query = query.eq('status', statusFilter);
+        }
+
+        // Apply date filter if selected
+        if (dateFilter) {
+            // Get the selected date in local timezone and convert to UTC for filtering
+            const selectedDate = new Date(dateFilter);
+            
+            // Create date with time set to beginning of day in local timezone
+            const localStartOfDay = new Date(selectedDate);
+            localStartOfDay.setHours(0, 0, 0, 0);
+            
+            // Create date with time set to end of day in local timezone
+            const localEndOfDay = new Date(selectedDate);
+            localEndOfDay.setHours(23, 59, 59, 999);
+            
+            // Convert local times to UTC for database filtering
+            const utcStartStr = localStartOfDay.toISOString();
+            const utcEndStr = localEndOfDay.toISOString();
+            
+            // Log for debugging
+            console.log(`Filtering requests for local date: ${dateFilter}`);
+            console.log(`UTC time range: ${utcStartStr} to ${utcEndStr}`);
+            
+            // Filter by created_at within the selected day in local timezone
+            query = query.gte('created_at', utcStartStr).lte('created_at', utcEndStr);
+        }
+
+        // Fetch data
+        const { data: requests, error } = await query;
+
+        if (error) throw error;
+
+        // Apply search filter client-side
+        let filteredRequests = requests;
+        if (searchTerm) {
+            // Check if search is a number (phone) or text (name)
+            const isNumericSearch = /^\d+$/.test(searchTerm);
+            
+            if (isNumericSearch) {
+                // Search for phone number - convert to string first to avoid TypeError
+                filteredRequests = requests.filter(request => 
+                    request.phone_number && String(request.phone_number).includes(searchTerm)
+                );
             } else {
-                query = query.eq('status', statusFilter);
+                // Search for customer name
+                filteredRequests = requests.filter(request => 
+                    request.customer_name && 
+                    request.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
+                );
             }
         }
 
-        if (searchTerm) {
-            query = query.or(`customer_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,notes.ilike.%${searchTerm}%`);
-        }
-        
-        // Execute the query
-        const { data: requests, error } = await query;
-        
-        if (error) throw error;
-        
-        // Update statistics
-        const completedCount = requests.filter(r => 
-            r.status === 'completed' || 
-            r.status === 'waiting-request' || 
-            r.status === 'request-issue'
-        ).length;
-
-        document.getElementById('total-requests').textContent = requests.length;
-        document.getElementById('open-requests').textContent = requests.filter(r => r.status === 'open' || r.status === 'in-progress').length;
-        document.getElementById('completed-requests').textContent = completedCount;
-        
-        // Store the filtered items for pagination
-        requestsState.filteredItems = [...requests];
-        requestsState.totalItems = requests.length;
+        // Update state
+        requestsState.filteredItems = filteredRequests;
+        requestsState.totalItems = filteredRequests.length;
         
         // Sort based on user preference
         if (requestsState.sortOrder === 'newest') {
@@ -256,9 +300,32 @@ async function loadRequests() {
         
         // Render the paginated requests
         renderRequestsTable(paginatedItems);
+
+        // Reset the search UI state after search is complete
+        const searchInput = document.getElementById('search-requests');
+        if (searchInput) {
+            searchInput.classList.remove('searching');
+        }
+        
+        // Also reset the refresh button to its default state
+        const refreshButton = document.getElementById('refresh-requests');
+        if (refreshButton && searchTerm.length > 0) {
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Refresh';
+        }
     } catch (error) {
         console.error('Error loading requests:', error);
         alert('Failed to load requests');
+        
+        // Make sure we reset UI state even on error
+        const searchInput = document.getElementById('search-requests');
+        if (searchInput) {
+            searchInput.classList.remove('searching');
+        }
+        
+        const refreshButton = document.getElementById('refresh-requests');
+        if (refreshButton) {
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Refresh';
+        }
     }
 }
 
@@ -279,13 +346,6 @@ const requestsTable = document.getElementById('requests-table')
 const searchEmployees = document.getElementById('search-employees')
 const employeeStatusFilter = document.getElementById('employee-status-filter')
 const employeesContainer = document.getElementById('employees-container')
-
-// Statistics Elements
-const totalRequestsElement = document.getElementById('total-requests')
-const openRequestsElement = document.getElementById('open-requests')
-const completedRequestsElement = document.getElementById('completed-requests')
-const readyUsersElement = document.getElementById('ready-users')
-const breakUsersElement = document.getElementById('break-users')
 
 // Event Listeners
 logoutButton.addEventListener('click', handleLogout)
@@ -311,7 +371,22 @@ searchRequests.addEventListener('input', () => {
 });
 
 filterStatus.addEventListener('change', loadRequests)
-refreshRequestsButton.addEventListener('click', loadRequests)
+refreshRequestsButton.addEventListener('click', () => {
+    // Add spinner to button for visual feedback
+    const button = document.getElementById('refresh-requests');
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Refreshing...';
+
+    // Refresh requests
+    loadRequests();
+    
+    // Also refresh the statistics
+    refreshStatistics();
+    
+    // Reset button after short delay
+    setTimeout(() => {
+        button.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Refresh';
+    }, 1000);
+});
 searchEmployees.addEventListener('input', debounce(loadEmployees, 300))
 employeeStatusFilter.addEventListener('change', loadEmployees)
 
@@ -347,22 +422,43 @@ async function handleLogout() {
 async function loadStatistics() {
     showLoading()
     try {
+        // Get today's date range
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const tomorrow = new Date(today)
+        tomorrow.setDate(tomorrow.getDate() + 1)
+
+        // Get requests with various status filters
         const [
             { count: totalRequests },
             { count: openRequests },
+            { count: inProgressRequests },
             { count: completedRequests },
             { count: readyUsers },
             { count: breakUsers }
         ] = await Promise.all([
-            window.supabase.from('requests').select('*', { count: 'exact' }),
-            window.supabase.from('requests').select('*', { count: 'exact' }).eq('status', 'open'),
-            window.supabase.from('requests').select('*', { count: 'exact' }).eq('status', 'completed'),
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString()),
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .eq('status', 'open')
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString()),
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .eq('status', 'in-progress')
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString()),
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .or('status.eq.completed,status.eq.waiting-request,status.eq.request-issue')
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString()),
             window.supabase.from('requests_users').select('*', { count: 'exact' }).eq('status', 'ready'),
             window.supabase.from('requests_users').select('*', { count: 'exact' }).eq('status', 'break')
         ])
 
         totalRequestsElement.textContent = totalRequests || 0
         openRequestsElement.textContent = openRequests || 0
+        inProgressRequestsElement.textContent = inProgressRequests || 0
         completedRequestsElement.textContent = completedRequests || 0
         
         // Update the employee status counts
@@ -1065,12 +1161,38 @@ function switchTab(tabName) {
     }
 }
 
+// Show loading animation
 function showLoading() {
-    loadingElement.classList.remove('hidden')
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'flex';
+        document.body.classList.add('loading');
+        
+        // Ensure the spinner animation is working
+        const spinner = loadingElement.querySelector('.loading-spinner');
+        if (spinner) {
+            // Force spinner animation by resetting it
+            spinner.style.animation = 'none';
+            spinner.offsetHeight; // Trigger reflow
+            spinner.style.animation = 'spin 1s linear infinite';
+        }
+    }
 }
 
+// Hide loading animation
 function hideLoading() {
-    loadingElement.classList.add('hidden')
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+        // Fade out with transition
+        loadingElement.style.opacity = '0';
+        
+        // After transition, hide completely
+        setTimeout(() => {
+            loadingElement.style.display = 'none';
+            loadingElement.style.opacity = '1';
+            document.body.classList.remove('loading');
+        }, 300);
+    }
 }
 
 function showSuccess(message) {
@@ -1148,13 +1270,24 @@ function formatDate(dateString) {
 // Open update modal
 async function openUpdateModal(requestId) {
     try {
-        const { data: request, error } = await window.supabase
-            .from('requests')
-            .select('*')
-            .eq('id', requestId)
-            .single()
+        // Get request data and non-voice employees in parallel
+        const [requestResult, employeesResult] = await Promise.all([
+            window.supabase
+                .from('requests')
+                .select('*')
+                .eq('id', requestId)
+                .single(),
+            window.supabase
+                .from('requests_users')
+                .select('assignee, email')
+                .eq('role', 'non-voice')
+        ]);
 
-        if (error) throw error
+        if (requestResult.error) throw requestResult.error;
+        if (employeesResult.error) throw employeesResult.error;
+
+        const request = requestResult.data;
+        const nonVoiceEmployees = employeesResult.data;
 
         // Create and show modal
         const modalHTML = `
@@ -1168,37 +1301,43 @@ async function openUpdateModal(requestId) {
                     </div>
                     <form id="update-form">
                         <input type="hidden" id="request-id" value="${requestId}">
-                        <div class="form-group">
-                            <label class="form-label" for="status">
-                                <i class="fas fa-tag text-gray-400 mr-2"></i>
-                                Status
-                            </label>
-                            <select id="status" class="form-input">
-                                <option value="open" ${request.status === 'open' ? 'selected' : ''}>Open</option>
-                                <option value="in-progress" ${request.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
-                                <option value="request-issue" ${request.status === 'request-issue' ? 'selected' : ''}>Request Issue</option>
-                                <option value="waiting-request" ${request.status === 'waiting-request' ? 'selected' : ''}>Waiting Request</option>
-                                <option value="completed" ${request.status === 'completed' ? 'selected' : ''}>Done</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
+                        
+                        <div class="form-group mb-4">
                             <label class="form-label" for="assigned-to">
                                 <i class="fas fa-user text-gray-400 mr-2"></i>
                                 Assigned To
                             </label>
-                            <select id="assigned-to" class="form-input">
+                            <select id="assigned-to" class="form-input w-full" onkeyup="filterAssigneeOptions(this)">
                                 <option value="">-- Not Assigned --</option>
-                                ${employeeOptions(request.assigned_to)}
+                                ${nonVoiceEmployees.map(emp => `
+                                    <option value="${emp.assignee}" 
+                                        ${emp.assignee === request.assigned_to ? 'selected' : ''}>
+                                        ${emp.assignee}
+                                    </option>
+                                `).join('')}
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="admin-notes">
-                                <i class="fas fa-note-sticky text-gray-400 mr-2"></i>
-                                Admin Notes
-                            </label>
-                            <textarea id="admin-notes" class="form-input" rows="3" placeholder="Add admin notes here...">${request.admin_notes || ''}</textarea>
-                        </div>
+
+                        ${request.non_voice_notes ? `
+                            <div class="form-group mb-4">
+                                <label class="form-label" for="non-voice-notes">
+                                    <i class="fas fa-note-sticky text-gray-400 mr-2"></i>
+                                    Non-Voice Notes
+                                </label>
+                                <textarea id="non-voice-notes" class="form-input w-full" rows="3">${request.non_voice_notes}</textarea>
+                            </div>
+                        ` : `
+                            <div class="text-gray-500 italic mb-4">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                No non-voice notes available yet
+                            </div>
+                        `}
+                        
                         <div class="flex justify-end space-x-2 mt-6">
+                            <button type="button" onclick="confirmDeleteRequest('${requestId}')" class="btn btn-danger">
+                                <i class="fas fa-trash-alt mr-2"></i>
+                                Delete Request
+                            </button>
                             <button type="button" onclick="closeModal()" class="btn btn-secondary">
                                 <i class="fas fa-times mr-2"></i>
                                 Cancel
@@ -1220,6 +1359,7 @@ async function openUpdateModal(requestId) {
 
         // Add event listener to form
         document.getElementById('update-form').addEventListener('submit', handleUpdateSubmit);
+        
         // Add click event to close modal when clicking outside
         const modal = document.getElementById('update-modal');
         modal.addEventListener('click', (e) => {
@@ -1228,26 +1368,64 @@ async function openUpdateModal(requestId) {
             }
         });
 
+        // Initialize select2 for searchable dropdown
+        $(document).ready(function() {
+            $('#assigned-to').select2({
+                width: '100%',
+                placeholder: 'Search and select employee...',
+                allowClear: true
+            });
+        });
+
     } catch (error) {
         console.error('Error loading request:', error);
-        alert('Failed to load request details');
+        showError('Failed to load request details');
     }
 }
-// Generate employee options for select
-function employeeOptions(selectedAssignee) {
-    if (!employees || employees.length === 0) return '';
-    
-    return employees
-        .filter(emp => emp.role === 'non-voice')
-        .map(emp => `<option value="${emp.assignee}" ${emp.assignee === selectedAssignee ? 'selected' : ''}>${emp.assignee}</option>`)
-        .join('');
+
+// Function to execute the delete request
+async function executeDeleteRequest(requestId) {
+    try {
+        const { error } = await window.supabase
+            .from('requests')
+            .delete()
+            .eq('id', requestId);
+
+        if (error) throw error;
+
+        // Close all modals
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => modal.remove());
+
+        // Refresh the requests table
+        loadRequests();
+        
+        // Show success message
+        showSuccess('Request deleted successfully');
+    } catch (error) {
+        console.error('Error deleting request:', error);
+        showError('Failed to delete request');
+    }
 }
 
-// Close modal
-function closeModal() {
-    const modal = document.getElementById('update-modal');
-    if (modal) {
-        modal.remove();
+// Function to filter assignee options as user types
+function filterAssigneeOptions(selectElement) {
+    const searchText = selectElement.value.toLowerCase();
+    const options = selectElement.options;
+
+    for (let i = 0; i < options.length; i++) {
+        const option = options[i];
+        const text = option.text.toLowerCase();
+        
+        // Skip the "Not Assigned" option
+        if (i === 0) continue;
+        
+        // Show/hide options based on search text
+        if (text.includes(searchText)) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
     }
 }
 
@@ -1256,19 +1434,23 @@ async function handleUpdateSubmit(e) {
     e.preventDefault();
     
     const requestId = document.getElementById('request-id').value;
-    const status = document.getElementById('status').value;
     const assignedTo = document.getElementById('assigned-to').value;
-    const adminNotes = document.getElementById('admin-notes').value;
+    const nonVoiceNotes = document.getElementById('non-voice-notes')?.value;
 
     try {
+        const updateData = {
+            assigned_to: assignedTo || null,
+            updated_at: new Date().toISOString()
+        };
+
+        // Only include non_voice_notes if the textarea exists (meaning there were existing notes)
+        if (document.getElementById('non-voice-notes')) {
+            updateData.non_voice_notes = nonVoiceNotes;
+        }
+
         const { error } = await window.supabase
             .from('requests')
-            .update({
-                status,
-                assigned_to: assignedTo || null,
-                admin_notes: adminNotes,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', requestId);
 
         if (error) throw error;
@@ -1276,11 +1458,10 @@ async function handleUpdateSubmit(e) {
         closeModal();
         loadRequests(); // Refresh the table
         
-        // Show success message
-        alert('Request updated successfully!');
+        showSuccess('Request updated successfully');
     } catch (error) {
         console.error('Error updating request:', error);
-        alert('Failed to update request: ' + error.message);
+        showError('Failed to update request: ' + error.message);
     }
 }
 
@@ -1614,6 +1795,29 @@ async function createEmployeeCard(employee) {
         card.className = 'employee-card';
         card.setAttribute('data-email', employee.email);
 
+        // Get today's date boundaries for proper filtering
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        // Create a Date object for the next day
+        const nextDay = new Date(today);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayStr = nextDay.toISOString().split('T')[0];
+        
+        console.log(`Fetching today's completed tasks for ${employee.assignee}, range: ${todayStr} to (excluding) ${nextDayStr}`);
+        
+        // Get today's date boundaries for proper filtering in local timezone
+        const localStartOfDay = new Date(today);
+        localStartOfDay.setHours(0, 0, 0, 0);
+        const localEndOfDay = new Date(today);
+        localEndOfDay.setHours(23, 59, 59, 999);
+
+        // Convert to ISO strings for database queries
+        const utcStartStr = localStartOfDay.toISOString();
+        const utcEndStr = localEndOfDay.toISOString();
+
+        console.log(`Fetching today's completed tasks for ${employee.assignee}`);
+        console.log(`Local day: ${today.toLocaleDateString()}, UTC range: ${utcStartStr} to ${utcEndStr}`);
+        
         // Get tasks counts in parallel to improve performance
         const [assignedResult, completedResult] = await Promise.all([
             // Get assigned requests count
@@ -1623,17 +1827,21 @@ async function createEmployeeCard(employee) {
                 .eq('assigned_to', employee.assignee)
                 .eq('status', 'in-progress'),
                 
-            // Get completed requests count
+            // Get completed requests count from today only in local timezone
             window.supabase
                 .from('requests')
                 .select('*', { count: 'exact' })
                 .eq('assigned_to', employee.assignee)
-                .eq('status', 'completed')
+                .or('status.eq.completed,status.eq.waiting-request,status.eq.request-issue')
+                .gte('updated_at', utcStartStr)
+                .lte('updated_at', utcEndStr)
         ]);
 
         // Set counts, default to 0 if errors
         const currentTasks = assignedResult.error ? 0 : (assignedResult.count || 0);
         const completedTasks = completedResult.error ? 0 : (completedResult.count || 0);
+        
+        console.log(`Employee ${employee.assignee}: Current tasks = ${currentTasks}, Completed today = ${completedTasks}`);
 
         // Get status and icon
         const status = employee.status || 'ready';
@@ -1671,7 +1879,7 @@ async function createEmployeeCard(employee) {
                         <i class="fas fa-check-circle text-green-500"></i>
                     </div>
                     <div class="stat-value completed-tasks">${completedTasks}</div>
-                    <div class="stat-label">Done</div>
+                    <div class="stat-label">Done Today</div>
                 </div>
             </div>
             
@@ -1979,6 +2187,152 @@ function updateEmployeeTableRow(tableRow, newStatus, timestamp) {
         tableRow.classList.remove('updating');
         return false;
     }
-} 
+}
+
+// Function to refresh statistics without full reload
+async function refreshStatistics() {
+    try {
+        // Get today's date range
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const tomorrow = new Date(today)
+        tomorrow.setDate(tomorrow.getDate() + 1)
+
+        // Get requests with various status filters
+        const [
+            { count: totalRequests },
+            { count: openRequests },
+            { count: inProgressRequests },
+            { count: completedRequests }
+        ] = await Promise.all([
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString()),
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .eq('status', 'open')
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString()),
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .eq('status', 'in-progress')
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString()),
+            window.supabase.from('requests').select('*', { count: 'exact' })
+                .or('status.eq.completed,status.eq.waiting-request,status.eq.request-issue')
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString())
+        ]);
+
+        // Animate count transitions
+        animateCounterValue(totalRequestsElement, parseInt(totalRequestsElement.textContent) || 0, totalRequests || 0);
+        animateCounterValue(openRequestsElement, parseInt(openRequestsElement.textContent) || 0, openRequests || 0);
+        animateCounterValue(inProgressRequestsElement, parseInt(inProgressRequestsElement.textContent) || 0, inProgressRequests || 0);
+        animateCounterValue(completedRequestsElement, parseInt(completedRequestsElement.textContent) || 0, completedRequests || 0);
+        
+        console.log('Statistics refreshed dynamically');
+    } catch (error) {
+        console.error('Error refreshing statistics:', error);
+    }
+}
+
+// Function to animate a counter value
+function animateCounterValue(element, startValue, endValue, duration = 800) {
+    if (!element) return;
+    
+    // Don't animate if values are the same
+    if (startValue === endValue) return;
+    
+    const difference = endValue - startValue;
+    const startTime = performance.now();
+    
+    // Use requestAnimationFrame for smooth animation
+    function updateCounter(currentTime) {
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        
+        // Easing function for smoother animation
+        const easedProgress = progress === 1 ? 1 : 1 - Math.pow(1 - progress, 3);
+        
+        // Calculate current value
+        const currentValue = Math.floor(startValue + difference * easedProgress);
+        
+        // Update element
+        element.textContent = currentValue;
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+            requestAnimationFrame(updateCounter);
+        }
+    }
+    
+    requestAnimationFrame(updateCounter);
+}
+
+// Add a function to refresh employee cards with proper filtering
+async function refreshEmployeeCards() {
+    try {
+        console.log('Refreshing employee cards...');
+        
+        // Get the container
+        const container = document.getElementById('employees-card-container');
+        const tableBody = document.getElementById('employees-table-body');
+        
+        if (!container && !tableBody) {
+            console.warn('Employee containers not found');
+            return;
+        }
+        
+        // Only refresh if employee tab is visible
+        if (employeesTab.classList.contains('hidden')) {
+            console.log('Employee tab not visible, skipping refresh');
+            return;
+        }
+        
+        // Reload employees
+        await loadEmployees();
+        
+        console.log('Employee cards refreshed');
+    } catch (error) {
+        console.error('Error refreshing employee cards:', error);
+    }
+}
+
+// Update the refresh button event handler
+document.getElementById('refresh-employees')?.addEventListener('click', async () => {
+    // Visual feedback
+    const button = document.getElementById('refresh-employees');
+    if (button) {
+        button.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> Refreshing...';
+        button.disabled = true;
+    }
+    
+    // Refresh employee cards
+    await refreshEmployeeCards();
+    
+    // Reset button
+    if (button) {
+        setTimeout(() => {
+            button.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Refresh';
+            button.disabled = false;
+        }, 1000);
+    }
+});
+
+// Add auto-refresh for employee cards
+setInterval(refreshEmployeeCards, 60000); // Refresh every minute
+
+// Close modal
+function closeModal() {
+    const modal = document.getElementById('update-modal');
+    if (modal) {
+        // Add fade out animation
+        modal.style.opacity = '0';
+        modal.style.transform = 'scale(0.95)';
+        
+        // Remove after animation completes
+        setTimeout(() => {
+            modal.remove();
+        }, 200);
+    }
+}
 
 
