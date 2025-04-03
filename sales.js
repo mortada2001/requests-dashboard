@@ -54,33 +54,93 @@ async function handleRequestSubmit(event) {
         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...'
         submitButton.disabled = true
         
-        // Get available non-voice employee
-        const { data: availableEmployee, error: employeeError } = await supabase
+        // Get all ready non-voice employees and their request counts
+        const { data: readyEmployees, error: employeeError } = await supabase
             .from('requests_users')
-            .select('assignee')
+            .select('assignee, email')
             .eq('role', 'non-voice')
             .eq('status', 'ready')
-            .limit(1)
-            .single()
 
-        // Set appropriate status based on assignment
-        // If an employee is assigned, set status to in-progress so it shows in their dashboard
-        // If no employee is assigned, set status to open
-        const status = availableEmployee?.assignee ? 'in-progress' : 'open'
-        const assigned_to = availableEmployee?.assignee || null
+        if (employeeError) throw employeeError
+        
+        if (!readyEmployees || readyEmployees.length === 0) {
+            throw new Error('No available non-voice employees')
+        }
+
+        // Get in-progress request counts for each employee
+        const requestCountPromises = readyEmployees.map(async (employee) => {
+            const { count, error: countError } = await supabase
+                .from('requests')
+                .select('*', { count: 'exact' })
+                .eq('assigned_to', employee.assignee)
+                .eq('status', 'in-progress')
+
+            if (countError) throw countError
+            
+            return {
+                ...employee,
+                requestCount: count || 0
+            }
+        })
+
+        const employeesWithCounts = await Promise.all(requestCountPromises)
+
+        // Calculate weights for distribution
+        const minCount = Math.min(...employeesWithCounts.map(e => e.requestCount))
+        const maxCount = Math.max(...employeesWithCounts.map(e => e.requestCount))
+        const countRange = maxCount - minCount || 1 // Avoid division by zero
+
+        // Calculate weighted probabilities (higher weight = more likely to be assigned)
+        const totalEmployees = employeesWithCounts.length
+        const weights = employeesWithCounts.map(employee => {
+            const countDiff = maxCount - employee.requestCount
+            // Base weight ensures everyone has a chance to get requests
+            const baseWeight = 1 / totalEmployees
+            // Additional weight based on how many fewer requests they have
+            const loadWeight = countDiff / countRange
+            // Combined weight with more emphasis on load balancing
+            return baseWeight + (loadWeight * 0.5)
+        })
+
+        // Normalize weights to sum to 1
+        const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
+        const normalizedWeights = weights.map(weight => weight / totalWeight)
+
+        // Select an employee based on weighted probability
+        const random = Math.random()
+        let cumulativeWeight = 0
+        let selectedEmployee = null
+
+        for (let i = 0; i < normalizedWeights.length; i++) {
+            cumulativeWeight += normalizedWeights[i]
+            if (random <= cumulativeWeight) {
+                selectedEmployee = employeesWithCounts[i]
+                break
+            }
+        }
+
+        // Fallback to first employee if no selection made (shouldn't happen)
+        if (!selectedEmployee) {
+            selectedEmployee = employeesWithCounts[0]
+        }
+
+        // Set timestamps
+        const currentTime = new Date().toISOString()
+        const requestData = {
+            customer_name: customerName,
+            phone_number: customerPhone,
+            notes: notes,
+            status: 'in-progress', // Always in-progress since we found an employee
+            assigned_to: selectedEmployee.assignee,
+            sales_assignee: currentUser.assignee,
+            created_at: currentTime,
+            assigned_at: currentTime
+        }
 
         // Create new request
         const { data: newRequest, error } = await supabase
             .from('requests')
-            .insert([{
-                customer_name: customerName,
-                phone_number: customerPhone,
-                notes: notes,
-                status: status,
-                assigned_to: assigned_to,
-                sales_assignee: currentUser.assignee,
-                created_at: new Date().toISOString()
-            }])
+            .insert([requestData])
             .select()
 
         if (error) throw error
@@ -99,8 +159,7 @@ async function handleRequestSubmit(event) {
         }, 1500)
         
         // Show success message
-        alert('Request submitted successfully!' + 
-              (assigned_to ? ` Assigned to ${assigned_to}.` : ' No agents available at the moment.'))
+        alert('Request submitted successfully!')
     } catch (error) {
         console.error('Error submitting request:', error)
         alert('Error submitting request: ' + error.message)
@@ -238,4 +297,11 @@ async function handleLogout() {
         console.error('Error signing out:', error)
         alert('Failed to sign out')
     }
+}
+
+// Function to show notifications (to avoid the undefined reference)
+function showNotification(message, type = 'info') {
+    // Since there's no notification container in sales.html,
+    // we'll just use alert for now
+    alert(message);
 }
