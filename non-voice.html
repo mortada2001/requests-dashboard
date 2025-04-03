@@ -266,6 +266,215 @@
             from { transform: translateX(120%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+
+        /* New animation styles */
+        .animate-slide-in {
+            animation: slideIn 0.4s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-fade-out {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        .row-highlight {
+            animation: highlight 1s ease-in-out;
+        }
+
+        @keyframes highlight {
+            0% { background-color: rgba(59, 130, 246, 0.1); }
+            50% { background-color: rgba(59, 130, 246, 0.2); }
+            100% { background-color: transparent; }
+        }
+
+        /* Stats cards animations */
+        .stat-card {
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                transparent 0%,
+                rgba(255, 255, 255, 0.5) 50%,
+                transparent 100%
+            );
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .stat-card:hover::after {
+            transform: translateX(100%);
+        }
+
+        /* Animated refresh button */
+        #refresh-btn {
+            transition: all 0.2s ease;
+        }
+
+        #refresh-btn:active {
+            /* Remove the rotation */
+            transform: translateY(1px);
+        }
+
+        /* Replace with a standard loading indicator */
+        .btn-loading {
+            position: relative;
+            pointer-events: none; /* Prevent clicks while loading */
+            background-color: #e5e7eb !important;
+        }
+
+        .btn-loading:after {
+            content: '';
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-top-color: #fff;
+            animation: simple-spin 0.6s linear infinite;
+            position: absolute;
+            right: 0.75rem;
+            top: calc(50% - 0.5rem);
+        }
+
+        @keyframes simple-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Keep this for Font Awesome icons */
+        .fa-spin {
+            animation: simple-spin 1s linear infinite;
+        }
+
+        /* Table animations */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table th {
+            background-color: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .table th:hover {
+            background-color: #f1f5f9;
+        }
+
+        .table td {
+            transition: all 0.3s ease;
+        }
+
+        /* Pulse animation for counters */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-pulse-once {
+            animation: pulse 0.6s ease-in-out;
+        }
+
+        .update-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #3b82f6;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        .update-badge.fade-out {
+            animation: slideOutDown 0.3s ease-in forwards;
+        }
+
+        .apply-updates {
+            background-color: white;
+            color: #3b82f6;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .apply-updates:hover {
+            background-color: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+        @keyframes slideInUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideOutDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(20px); opacity: 0; }
+        }
+
+        /* Add styles for the request badge */
+        .request-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Add animation for in-progress icon */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fa-spinner {
+            animation: spin 1.5s linear infinite;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -323,23 +532,66 @@
 
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <!-- Status Controls -->
-            <!-- <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+            <!-- Stats Section -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <i class="fas fa-circle-dot text-blue-500 mr-2"></i>
-                    My Status
+                    <i class="fas fa-chart-bar text-blue-500 mr-2"></i>
+                    Dashboard Stats
                 </h2>
-                <div class="flex items-center space-x-4">
-                    <button id="ready-btn" class="btn status-ready flex items-center">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        Ready
-                    </button>
-                    <button id="break-btn" class="btn status-break flex items-center">
-                        <i class="fas fa-coffee mr-2"></i>
-                        Break
-                    </button>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200 shadow-sm transition-transform hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-blue-500">Total Employees</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="total-employees">-</h3>
+                            </div>
+                            <div class="bg-blue-100 rounded-full p-3">
+                                <i class="fas fa-users text-blue-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Online non-voice team members</p>
+                    </div>
+                    
+                    <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200 shadow-sm transition-transform hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-green-500">Ready</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="ready-employees">-</h3>
+                            </div>
+                            <div class="bg-green-100 rounded-full p-3">
+                                <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Employees available for assignments</p>
+                    </div>
+                    
+                    <div class="stat-card bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border border-amber-200 shadow-sm transition-transform hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-amber-500">On Break</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="break-employees">-</h3>
+                            </div>
+                            <div class="bg-amber-100 rounded-full p-3">
+                                <i class="fas fa-coffee text-amber-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Employees currently on break</p>
+                    </div>
+                    
+                    <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200 shadow-sm transition-transform hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-purple-500">Active Requests</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="active-requests">-</h3>
+                            </div>
+                            <div class="bg-purple-100 rounded-full p-3">
+                                <i class="fas fa-tasks text-purple-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">In-progress requests system-wide</p>
+                    </div>
                 </div>
-            </div> -->
+            </div>
 
             <!-- Assigned Requests -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-fade-in">
@@ -349,19 +601,26 @@
                         Assigned Requests
                     </h2>
                     <div class="flex items-center space-x-3">
-                        <div class="sort-selector">
+                        <div class="sort-selector flex items-center space-x-2">
                             <i class="fas fa-sort-amount-down text-gray-500 text-sm"></i>
-                            <select id="sort-order" class="form-input py-1 px-3 text-sm">
+                            <select id="sort-order" class="form-select text-sm">
                                 <option value="desc">Newest First</option>
                                 <option value="asc">Oldest First</option>
                             </select>
-                            <i class="fas fa-chevron-down sort-icon"></i>
                         </div>
-                        <button id="refresh-btn" class="btn btn-secondary flex items-center">
-                            <i class="fas fa-sync-alt mr-2"></i>
-                            Refresh
-                        </button>
+                        <div class="search-box relative">
+                            <input 
+                                type="text" 
+                                id="search-input" 
+                                placeholder="Search by name or phone number..." 
+                                class="form-input pl-10 text-sm w-64"
+                            >
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
                     </div>
+                    <button id="refresh-btn" class="btn btn-primary">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
                 </div>
                 
                 <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 text-sm">
@@ -494,9 +753,555 @@
         let statusStartTime = null;
         let statusTimer = null;
 
+        // Set up periodic refresh for stats and data
+        function setupPeriodicStatUpdates() {
+            console.log("Setting up periodic updates");
+            
+            // Update stats every 5 seconds
+            setInterval(updateDashboardStats, 5000);
+            
+            // Check for new requests every 5 seconds
+            const checkInterval = 5000; // 5 seconds
+            let lastCheckTime = new Date().getTime();
+            
+            async function checkForNewRequests() {
+                try {
+                    // Get the current sort order
+                    const sortOrderSelect = document.getElementById('sort-order');
+                    const sortOrder = sortOrderSelect ? sortOrderSelect.value : 'desc';
+                    
+                    // Only check for new requests since last check
+                    const sinceTime = new Date(lastCheckTime).toISOString();
+                    
+                    console.log(`Checking for new requests since ${sinceTime}`);
+                    
+                    // Get only new requests since last check
+                    const { data: newRequests, error } = await supabase
+                        .from('requests')
+                        .select('*')
+                        .eq('assigned_to', currentUser.assignee)
+                        .eq('status', 'in-progress')
+                        .gt('created_at', sinceTime);
+                    
+                    if (error) throw error;
+                    
+                    if (newRequests && newRequests.length > 0) {
+                        console.log(`Found ${newRequests.length} new requests`);
+                        
+                        // Update the refresh button with a badge
+                        const refreshBtn = document.getElementById('refresh-btn');
+                        if (refreshBtn) {
+                            // Get current badge count
+                            const existingBadge = refreshBtn.querySelector('.request-badge');
+                            const currentCount = existingBadge ? parseInt(existingBadge.textContent) : 0;
+                            
+                            // Create or update badge with incremented count
+                            const badge = existingBadge || document.createElement('span');
+                            badge.className = 'request-badge absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 animate-pulse';
+                            badge.textContent = currentCount + newRequests.length;
+                            refreshBtn.style.position = 'relative';
+                            
+                            if (!existingBadge) {
+                                refreshBtn.appendChild(badge);
+                            }
+                            
+                            // Update tooltip
+                            refreshBtn.title = `${currentCount + newRequests.length} new request${currentCount + newRequests.length > 1 ? 's' : ''} available. Click to refresh.`;
+                        }
+                    }
+                    
+                    // Update the last check time
+                    lastCheckTime = new Date().getTime();
+                } catch (error) {
+                    console.error("Error checking for new requests:", error);
+                }
+            }
+            
+            // Set up the interval for checking new requests
+            setInterval(checkForNewRequests, checkInterval);
+        }
+
+        // Smart refresh that only updates changed data
+        async function smartRefreshRequests() {
+            try {
+                const sortOrderSelect = document.getElementById('sort-order');
+                const sortOrder = sortOrderSelect ? sortOrderSelect.value : 'desc';
+                
+                // Fetch only the latest data
+                const { data: requests, error } = await supabase
+                    .from('requests')
+                    .select('*')
+                    .eq('assigned_to', currentUser.assignee)
+                    .eq('status', 'in-progress')
+                    .order('created_at', { ascending: sortOrder === 'asc' });
+                
+                if (error) throw error;
+                
+                const newRequests = requests || [];
+                
+                // Quick check if nothing has changed
+                if (JSON.stringify(newRequests) === JSON.stringify(allRequests)) {
+                    console.log("No changes detected, skipping update");
+                    return;
+                }
+                
+                // Create maps for efficient comparison
+                const currentMap = new Map(allRequests.map(req => [req.id, req]));
+                const newMap = new Map(newRequests.map(req => [req.id, req]));
+                
+                // Find changes
+                const added = newRequests.filter(req => !currentMap.has(req.id));
+                const removed = allRequests.filter(req => !newMap.has(req.id));
+                const updated = newRequests.filter(req => {
+                    const currentReq = currentMap.get(req.id);
+                    return currentReq && JSON.stringify(req) !== JSON.stringify(currentReq);
+                });
+                
+                // If no changes, skip update
+                if (!added.length && !removed.length && !updated.length) {
+                    return;
+                }
+                
+                console.log(`Changes detected: ${added.length} new, ${updated.length} updated, ${removed.length} removed`);
+                
+                const requestsTable = document.getElementById('requests-table');
+                if (!requestsTable) return;
+                
+                // Handle removed rows first with smooth animation
+                removed.forEach(req => {
+                    const row = requestsTable.querySelector(`tr[data-id="${req.id}"]`);
+                    if (row) {
+                        // Add slide-up and fade-out animation
+                        row.style.transition = 'all 0.3s ease-out';
+                        row.style.transform = 'translateY(-20px)';
+                        row.style.opacity = '0';
+                        
+                        // Remove after animation
+                        setTimeout(() => {
+                            if (row.parentNode) {
+                                row.parentNode.removeChild(row);
+                            }
+                            
+                            // Also remove expanded row if exists
+                            const expandedRow = document.getElementById(`expanded-${req.id}`);
+                            if (expandedRow) {
+                                expandedRow.remove();
+                            }
+                        }, 300);
+                    }
+                });
+                
+                // Handle updated rows with highlight animation
+                updated.forEach(req => {
+                    const row = requestsTable.querySelector(`tr[data-id="${req.id}"]`);
+                    if (row) {
+                        // If status changed to something other than in-progress, remove the row
+                        if (req.status !== 'in-progress') {
+                            row.style.transition = 'all 0.3s ease-out';
+                            row.style.transform = 'translateY(-20px)';
+                            row.style.opacity = '0';
+                            
+                            setTimeout(() => {
+                                if (row.parentNode) {
+                                    row.parentNode.removeChild(row);
+                                }
+                                const expandedRow = document.getElementById(`expanded-${req.id}`);
+                                if (expandedRow) {
+                                    expandedRow.remove();
+                                }
+                            }, 300);
+                            return;
+                        }
+                        
+                        // Add highlight animation
+                        row.style.transition = 'background-color 0.3s ease-in-out';
+                        row.style.backgroundColor = '#f0f9ff';
+                        
+                        // Update content
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 6) {
+                            cells[0].innerHTML = `<span class="font-medium text-gray-900">${req.customer_name || ''}</span>`;
+                            cells[1].textContent = req.phone_number || '';
+                            cells[2].innerHTML = `
+                                <span class="status-pill status-${req.status}">
+                                    <i class="fas fa-${getStatusIcon(req.status)}"></i>
+                                    ${formatRequestStatus(req.status)}
+                                </span>
+                            `;
+                            cells[3].textContent = req.sales_assignee || '';
+                            cells[4].textContent = formatDate(req.created_at);
+                        }
+                        
+                        // Update expanded row if visible
+                        const expandedRow = document.getElementById(`expanded-${req.id}`);
+                        if (expandedRow && !expandedRow.classList.contains('hidden')) {
+                            const notesSection = expandedRow.querySelector('.notes-section');
+                            if (notesSection) {
+                                notesSection.innerHTML = `
+                                    <div class="notes-card">
+                                        <div class="notes-title">
+                                            <i class="fas fa-comment text-blue-500"></i>
+                                            Sales Notes
+                                        </div>
+                                        <p class="text-gray-600">${req.notes || 'No sales notes available'}</p>
+                                    </div>
+                                    <div class="notes-card">
+                                        <div class="notes-title">
+                                            <i class="fas fa-note-sticky text-green-500"></i>
+                                            Non-Voice Notes
+                                        </div>
+                                        <p class="text-gray-600">${req.non_voice_notes || 'No non-voice notes added yet'}</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                        
+                        // Remove highlight after animation
+                        setTimeout(() => {
+                            row.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                });
+                
+                // Handle new rows with slide-in animation
+                added.forEach((req, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'clickable-row';
+                    row.setAttribute('data-id', req.id);
+                    row.onclick = () => toggleExpandedRow(row, req.id);
+                    
+                    // Start with 0 opacity and translated up
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateY(-20px)';
+                    row.style.transition = 'all 0.3s ease-out';
+                    
+                    row.innerHTML = `
+                        <td class="font-medium text-gray-900">${req.customer_name || ''}</td>
+                        <td>${req.phone_number || ''}</td>
+                        <td>
+                            <span class="status-pill status-${req.status}">
+                                <i class="fas fa-${getStatusIcon(req.status)}"></i>
+                                ${formatRequestStatus(req.status)}
+                            </span>
+                        </td>
+                        <td>${req.sales_assignee || ''}</td>
+                        <td>${formatDate(req.created_at)}</td>
+                        <td>
+                            <button 
+                                onclick="event.stopPropagation(); openUpdateModal('${req.id}')" 
+                                class="btn btn-update"
+                                title="Update request status and notes"
+                            >
+                                <i class="fas fa-edit mr-1"></i>
+                                Update
+                            </button>
+                        </td>
+                    `;
+                    
+                    // Insert at the correct position based on sort order
+                    if (sortOrder === 'desc') {
+                        // For newest first, insert at the beginning
+                        if (requestsTable.firstChild) {
+                            requestsTable.insertBefore(row, requestsTable.firstChild);
+                        } else {
+                            requestsTable.appendChild(row);
+                        }
+                    } else {
+                        // For oldest first, insert at the end
+                        requestsTable.appendChild(row);
+                    }
+                    
+                    // Animate in with a slight delay based on index
+                    setTimeout(() => {
+                        row.style.opacity = '1';
+                        row.style.transform = 'translateY(0)';
+                    }, index * 100); // Stagger the animations
+                });
+                
+                // Update the global array
+                allRequests = newRequests;
+                
+                // Only update stats if there were actual changes
+                if (added.length || removed.length || updated.length) {
+                    updateDashboardStats();
+                }
+                
+            } catch (error) {
+                console.error("Error in smart refresh:", error);
+            }
+        }
+        
+        // Update table with specific changes
+        function updateTableWithChanges(added, updated, removed) {
+            const requestsTable = document.getElementById('requests-table');
+            if (!requestsTable) return;
+            
+            const startIndex = currentPage * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, allRequests.length);
+            const displayedIds = allRequests.slice(startIndex, endIndex).map(req => req.id);
+            
+            // First, remove rows that should no longer be displayed
+            removed.forEach(req => {
+                const row = document.querySelector(`tr[data-id="${req.id}"]`);
+                if (row) {
+                    // Add exit animation
+                    row.classList.add('animate-fade-out');
+                    setTimeout(() => {
+                        if (row.parentNode) {
+                            row.parentNode.removeChild(row);
+                        }
+                    }, 300);
+                }
+                
+                // Also remove expanded content if any
+                const expandedRow = document.getElementById(`expanded-${req.id}`);
+                if (expandedRow) {
+                    expandedRow.classList.add('animate-fade-out');
+                    setTimeout(() => {
+                        if (expandedRow.parentNode) {
+                            expandedRow.parentNode.removeChild(expandedRow);
+                        }
+                    }, 300);
+                }
+            });
+            
+            // Then update existing rows
+            updated.forEach(req => {
+                // Only update if it's on the current page
+                if (displayedIds.includes(req.id)) {
+                    const row = document.querySelector(`tr[data-id="${req.id}"]`);
+                    if (row) {
+                        // Update row content
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 6) {
+                            cells[0].innerHTML = `<span class="font-medium text-gray-900">${req.customer_name || ''}</span>`;
+                            cells[1].textContent = req.phone_number || '';
+                            cells[2].innerHTML = `
+                                <span class="status-pill status-${req.status}">
+                                    <i class="fas fa-${getStatusIcon(req.status)}"></i>
+                                    ${formatRequestStatus(req.status)}
+                                </span>
+                            `;
+                            cells[3].textContent = req.sales_assignee || '';
+                            cells[4].textContent = formatDate(req.created_at);
+                        }
+                        
+                        // Add highlight animation
+                        row.classList.add('row-highlight');
+                        setTimeout(() => {
+                            row.classList.remove('row-highlight');
+                        }, 1000);
+                        
+                        // Also update expanded content if it exists
+                        const expandedRow = document.getElementById(`expanded-${req.id}`);
+                        if (expandedRow) {
+                            const notesSection = expandedRow.querySelector('.notes-section');
+                            if (notesSection) {
+                                notesSection.innerHTML = `
+                                    <div class="notes-card">
+                                        <div class="notes-title">
+                                            <i class="fas fa-comment text-blue-500"></i>
+                                            Sales Notes
+                                        </div>
+                                        <p class="text-gray-600">${req.notes || 'No sales notes available'}</p>
+                                    </div>
+                                    <div class="notes-card">
+                                        <div class="notes-title">
+                                            <i class="fas fa-note-sticky text-green-500"></i>
+                                            Non-Voice Notes
+                                        </div>
+                                        <p class="text-gray-600">${req.non_voice_notes || 'No non-voice notes added yet'}</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Finally add new rows
+            added.forEach(req => {
+                // Only add if it's on the current page
+                if (displayedIds.includes(req.id)) {
+                    // Create new row with enter animation
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'clickable-row animate-slide-in';
+                    newRow.setAttribute('data-id', req.id);
+                    newRow.onclick = () => toggleExpandedRow(newRow, req.id);
+                    
+                    newRow.innerHTML = `
+                        <td class="font-medium text-gray-900">${req.customer_name || ''}</td>
+                        <td>${req.phone_number || ''}</td>
+                        <td>
+                            <span class="status-pill status-${req.status}">
+                                <i class="fas fa-${getStatusIcon(req.status)}"></i>
+                                ${formatRequestStatus(req.status)}
+                            </span>
+                        </td>
+                        <td>${req.sales_assignee || ''}</td>
+                        <td>${formatDate(req.created_at)}</td>
+                        <td>
+                            <button 
+                                onclick="event.stopPropagation(); openUpdateModal('${req.id}')" 
+                                class="btn btn-update"
+                                title="Update request status and notes"
+                            >
+                                <i class="fas fa-edit mr-1"></i>
+                                Update
+                            </button>
+                        </td>
+                    `;
+                    
+                    // Insert in the right position based on sort order
+                    let inserted = false;
+                    const rows = requestsTable.querySelectorAll('tr[data-id]');
+                    rows.forEach((row, index) => {
+                        if (!inserted) {
+                            const rowIndex = displayedIds.indexOf(row.getAttribute('data-id'));
+                            const newIndex = displayedIds.indexOf(req.id);
+                            
+                            if (newIndex < rowIndex) {
+                                requestsTable.insertBefore(newRow, row);
+                                inserted = true;
+                            }
+                        }
+                    });
+                    
+                    // If not inserted yet, append at the end
+                    if (!inserted) {
+                        requestsTable.appendChild(newRow);
+                    }
+                    
+                    // Also create the expanded row (initially hidden)
+                    const expandedRow = document.createElement('tr');
+                    expandedRow.className = 'expanded-content hidden';
+                    expandedRow.id = `expanded-${req.id}`;
+                    
+                    expandedRow.innerHTML = `
+                        <td colspan="6">
+                            <div class="notes-section">
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-comment text-blue-500"></i>
+                                        Sales Notes
+                                    </div>
+                                    <p class="text-gray-600">${req.notes || 'No sales notes available'}</p>
+                                </div>
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-note-sticky text-green-500"></i>
+                                        Non-Voice Notes
+                                    </div>
+                                    <p class="text-gray-600">${req.non_voice_notes || 'No non-voice notes added yet'}</p>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    
+                    // Insert after the main row
+                    if (newRow.nextSibling) {
+                        requestsTable.insertBefore(expandedRow, newRow.nextSibling);
+                    } else {
+                        requestsTable.appendChild(expandedRow);
+                    }
+                }
+            });
+            
+            // Update pagination information if there were changes
+            if (added.length > 0 || removed.length > 0) {
+                updatePaginationInfo();
+            }
+        }
+        
+        // Update pagination information
+        function updatePaginationInfo() {
+            const startIndex = currentPage * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, allRequests.length);
+            
+            // Update pagination text
+            const paginationInfo = document.getElementById('pagination-info');
+            if (paginationInfo) {
+                paginationInfo.textContent = 
+                    `Showing ${startIndex + 1}-${endIndex} of ${allRequests.length} requests`;
+            }
+            
+            // Update button states
+            const prevPage = document.getElementById('prev-page');
+            const nextPage = document.getElementById('next-page');
+            
+            if (prevPage) {
+                prevPage.disabled = currentPage === 0;
+            }
+            
+            if (nextPage) {
+                nextPage.disabled = endIndex >= allRequests.length;
+            }
+            
+            // Show/hide pagination controls
+            const paginationControls = document.getElementById('pagination-controls');
+            if (paginationControls) {
+                if (allRequests.length > pageSize) {
+                    paginationControls.classList.remove('hidden');
+                } else {
+                    paginationControls.classList.add('hidden');
+                }
+            }
+        }
+
+        // Document ready event with initialization
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 await checkSession()
+                
+                // Set default sort order to newest first
+                const sortOrderSelect = document.getElementById('sort-order');
+                if (sortOrderSelect) {
+                    sortOrderSelect.value = 'desc';
+                    localStorage.setItem('nonVoiceSortOrder', 'desc');
+                    
+                    // Update the sort icon
+                    const sortIcon = document.querySelector('.sort-selector i:first-child');
+                    if (sortIcon) {
+                        sortIcon.className = 'fas fa-sort-amount-down text-gray-500 text-sm';
+                    }
+                }
+                
+                // Set up search functionality
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase().trim();
+                        const rows = document.querySelectorAll('tr[data-id]');
+                        
+                        rows.forEach(row => {
+                            const customerName = row.querySelector('td:first-child').textContent.toLowerCase();
+                            const phoneNumber = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                            const isNumber = /^\d+$/.test(searchTerm);
+                            
+                            let shouldShow = false;
+                            if (isNumber) {
+                                // If search term is a number, search in phone number
+                                shouldShow = phoneNumber.includes(searchTerm);
+                            } else {
+                                // If search term contains letters, search in customer name
+                                shouldShow = customerName.includes(searchTerm);
+                            }
+                            
+                            // Show/hide the row and its expanded content
+                            row.style.display = shouldShow ? '' : 'none';
+                            const expandedRow = document.getElementById(`expanded-${row.getAttribute('data-id')}`);
+                            if (expandedRow) {
+                                expandedRow.style.display = shouldShow ? '' : 'none';
+                            }
+                        });
+                        
+                        // Update pagination info
+                        updatePaginationInfo();
+                    });
+                }
+                
+                // Check for unread notifications
+                await checkUnreadNotifications();
                 
                 // If user's status is offline, set it to ready upon login
                 if (currentUser.status === 'offline') {
@@ -528,14 +1333,154 @@
                 // Set up subscriptions
                 setupSubscriptions();
                 
-                loadAssignedRequests()
-
+                // Load initial data
+                await loadAssignedRequests()
+                
+                // Explicitly update dashboard stats after initialization
+                await updateDashboardStats();
+                
+                // Call this after everything is initialized
+                setupPeriodicStatUpdates();
+                
                 // Hide loading spinner
                 document.getElementById('loading').classList.add('hidden')
                 
                 // Set up event listeners for other UI elements
-                document.getElementById('refresh-btn').addEventListener('click', loadAssignedRequests)
-                document.getElementById('sort-order').addEventListener('change', loadAssignedRequests)
+                document.getElementById('refresh-btn').addEventListener('click', function() {
+                    // Remove the badge when refreshing
+                    const badge = this.querySelector('.request-badge');
+                    if (badge) {
+                        badge.remove();
+                    }
+                    
+                    // Add loading state
+                    this.classList.add('btn-loading');
+                    this.innerHTML = 'Loading...';
+                    
+                    // Load the requests
+                    loadAssignedRequests();
+                });
+                
+                // Add improved sort change handler
+                document.getElementById('sort-order').addEventListener('change', async function() {
+                    const selectedValue = this.value;
+                    console.log("Sort order changed to:", selectedValue);
+                    
+                    // Store the sort preference
+                    localStorage.setItem('nonVoiceSortOrder', selectedValue);
+                    
+                    // Update the sort icon immediately for visual feedback
+                    const sortIcon = document.querySelector('.sort-selector i:first-child');
+                    if (sortIcon) {
+                        sortIcon.className = selectedValue === 'asc' 
+                            ? 'fas fa-sort-amount-up text-gray-500 text-sm'
+                            : 'fas fa-sort-amount-down text-gray-500 text-sm';
+                    }
+                    
+                    // Sort the existing requests array
+                    allRequests.sort((a, b) => {
+                        const dateA = new Date(a.created_at).getTime();
+                        const dateB = new Date(b.created_at).getTime();
+                        return selectedValue === 'asc' ? dateA - dateB : dateB - dateA;
+                    });
+                    
+                    // Update the UI with animation
+                    const requestsTable = document.getElementById('requests-table');
+                    if (!requestsTable) return;
+                    
+                    // Save expanded states
+                    const expandedStates = new Map();
+                    document.querySelectorAll('tr[data-id]').forEach(row => {
+                        const id = row.getAttribute('data-id');
+                        const expandedRow = document.getElementById(`expanded-${id}`);
+                        if (expandedRow) {
+                            expandedStates.set(id, !expandedRow.classList.contains('hidden'));
+                        }
+                    });
+                    
+                    // Clear the table
+                    requestsTable.innerHTML = '';
+                    
+                    // Re-add rows in new order with fade animation
+                    const startIndex = currentPage * pageSize;
+                    const endIndex = Math.min(startIndex + pageSize, allRequests.length);
+                    
+                    for (let i = startIndex; i < endIndex; i++) {
+                        const req = allRequests[i];
+                        
+                        // Create main row with fade-in animation
+                        const row = document.createElement('tr');
+                        row.className = 'clickable-row';
+                        row.setAttribute('data-id', req.id);
+                        row.style.opacity = '0';
+                        row.onclick = () => toggleExpandedRow(row, req.id);
+                        
+                        row.innerHTML = `
+                            <td class="font-medium text-gray-900">${req.customer_name || ''}</td>
+                            <td>${req.phone_number || ''}</td>
+                            <td>
+                                <span class="status-pill status-${req.status}">
+                                    <i class="fas fa-${getStatusIcon(req.status)}"></i>
+                                    ${formatRequestStatus(req.status)}
+                                </span>
+                            </td>
+                            <td>${req.sales_assignee || ''}</td>
+                            <td>${formatDate(req.created_at)}</td>
+                            <td>
+                                <button 
+                                    onclick="event.stopPropagation(); openUpdateModal('${req.id}')" 
+                                    class="btn btn-update"
+                                    title="Update request status and notes"
+                                >
+                                    <i class="fas fa-edit mr-1"></i>
+                                    Update
+                                </button>
+                            </td>
+                        `;
+                        
+                        requestsTable.appendChild(row);
+                        
+                        // Create expanded row if it was expanded before
+                        if (expandedStates.get(req.id)) {
+                            const expandedRow = document.createElement('tr');
+                            expandedRow.className = 'expanded-content';
+                            expandedRow.id = `expanded-${req.id}`;
+                            
+                            expandedRow.innerHTML = `
+                                <td colspan="6">
+                                    <div class="notes-section">
+                                        <div class="notes-card">
+                                            <div class="notes-title">
+                                                <i class="fas fa-comment text-blue-500"></i>
+                                                Sales Notes
+                                            </div>
+                                            <p class="text-gray-600">${req.notes || 'No sales notes available'}</p>
+                                        </div>
+                                        <div class="notes-card">
+                                            <div class="notes-title">
+                                                <i class="fas fa-note-sticky text-green-500"></i>
+                                                Non-Voice Notes
+                                            </div>
+                                            <p class="text-gray-600">${req.non_voice_notes || 'No non-voice notes added yet'}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            `;
+                            
+                            requestsTable.appendChild(expandedRow);
+                        }
+                        
+                        // Animate row in
+                        setTimeout(() => {
+                            row.style.opacity = '1';
+                            row.style.transition = 'opacity 0.3s ease-in-out';
+                        }, i * 50); // Stagger the animations
+                    }
+                    
+                    // Update pagination info
+                    updatePaginationInfo();
+                });
+                
                 document.getElementById('logout').addEventListener('click', handleLogout)
                 
                 // Debug button to check status
@@ -543,17 +1488,11 @@
                     try {
                         console.log("Debug: Checking current user status...");
                         await checkUserStatus();
+                        await updateDashboardStats(); // Also refresh stats
                     } catch (err) {
                         console.error("Debug: Unexpected error", err);
                     }
                 });
-                
-                // Set up periodic check for unassigned requests
-                setInterval(async () => {
-                    if (currentUser && currentUser.status === 'ready') {
-                        await assignUnassignedRequests();
-                    }
-                }, 60000); // Check every minute
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
                 alert('Failed to initialize dashboard: ' + error.message);
@@ -701,27 +1640,225 @@
         // Load assigned requests
         async function loadAssignedRequests() {
             try {
-                // Get sort order from dropdown
-                const sortOrder = document.getElementById('sort-order').value;
+                // Get sort order from dropdown and store it in localStorage for persistence
+                const sortOrderSelect = document.getElementById('sort-order');
+                const sortOrder = sortOrderSelect ? sortOrderSelect.value : 'desc';
                 
+                // Store the sort preference for future page loads
+                localStorage.setItem('nonVoiceSortOrder', sortOrder);
+                
+                console.log("LOADING REQUESTS with sort order:", sortOrder);
+                
+                // Add loading state to refresh button
+                const refreshButton = document.getElementById('refresh-btn');
+                if (refreshButton) {
+                    refreshButton.classList.add('btn-loading');
+                    refreshButton.innerHTML = 'Loading...';
+                }
+                
+                // Add loading state to sort dropdown
+                if (sortOrderSelect) {
+                    sortOrderSelect.disabled = true;
+                }
+                
+                // Show small loading indicator in table
+                const requestsTable = document.getElementById('requests-table');
+                if (requestsTable) {
+                    const loadingRow = document.createElement('tr');
+                    loadingRow.id = 'loading-indicator-row';
+                    loadingRow.innerHTML = `
+                        <td colspan="6" class="text-center py-2 text-blue-500">
+                            <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                            Loading...
+                        </td>
+                    `;
+                    
+                    // Insert at the top
+                    if (requestsTable.firstChild) {
+                        requestsTable.insertBefore(loadingRow, requestsTable.firstChild);
+                    } else {
+                        requestsTable.appendChild(loadingRow);
+                    }
+                }
+                
+                // Fetch requests with server-side sorting
                 const { data: requests, error } = await supabase
                     .from('requests')
                     .select('*')
                     .eq('assigned_to', currentUser.assignee)
-                    // Only show in-progress requests in the main table
                     .eq('status', 'in-progress')
-                    .order('created_at', { ascending: sortOrder === 'asc' })
+                    .order('created_at', { ascending: sortOrder === 'asc' });
+                
+                if (error) throw error;
 
-                if (error) throw error
+                // Remove loading indicator
+                const loadingIndicator = document.getElementById('loading-indicator-row');
+                if (loadingIndicator && loadingIndicator.parentNode) {
+                    loadingIndicator.parentNode.removeChild(loadingIndicator);
+                }
 
                 // Store all requests for pagination
-                allRequests = requests || [];
+                allRequests = requests ? [...requests] : [];
                 
-                // Display the current page
+                // Display the current page - this will update the UI
                 displayCurrentPage();
+                
+                // Also update the dashboard stats
+                updateDashboardStats();
+                
+                // Reset UI states
+                if (refreshButton) {
+                    refreshButton.classList.remove('btn-loading');
+                    refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Refresh';
+                }
+                
+                if (sortOrderSelect) {
+                    sortOrderSelect.disabled = false;
+                }
+                
+                // Update the sort icon
+                const sortIcon = document.querySelector('.sort-selector i:first-child');
+                if (sortIcon) {
+                    sortIcon.className = sortOrder === 'asc' 
+                        ? 'fas fa-sort-amount-up text-gray-500 text-sm'
+                        : 'fas fa-sort-amount-down text-gray-500 text-sm';
+                }
+                
             } catch (error) {
-                console.error('Error loading requests:', error)
-                alert('Failed to load requests')
+                console.error('Error loading requests:', error);
+                showNotification('Failed to load requests: ' + error.message, 'error');
+                
+                // Reset UI states on error
+                const refreshButton = document.getElementById('refresh-btn');
+                if (refreshButton) {
+                    refreshButton.classList.remove('btn-loading');
+                    refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Refresh';
+                }
+                
+                const sortOrderSelect = document.getElementById('sort-order');
+                if (sortOrderSelect) {
+                    sortOrderSelect.disabled = false;
+                }
+            }
+        }
+
+        // Update dashboard stats
+        async function updateDashboardStats() {
+            try {
+                // Get all non-voice employees that are not offline
+                const { data: employees, error: employeeError } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('role', 'non-voice')
+                    .neq('status', 'offline')
+                
+                if (employeeError) throw employeeError
+                
+                // Get total in-progress requests count
+                const { count: activeRequests, error: requestsError } = await supabase
+                    .from('requests')
+                    .select('id', { count: 'exact' })
+                    .eq('status', 'in-progress')
+                
+                if (requestsError) throw requestsError
+                
+                // Count employees by status manually
+                let totalEmployees = 0
+                let readyEmployees = 0
+                let breakEmployees = 0
+                
+                if (employees && employees.length > 0) {
+                    totalEmployees = employees.length
+                    
+                    employees.forEach(emp => {
+                        if (emp.status === 'ready') {
+                            readyEmployees++
+                        } else if (emp.status === 'break') {
+                            breakEmployees++
+                        }
+                    })
+                }
+                
+                // Apply animated counter updates to the stats
+                animateCounter('total-employees', totalEmployees)
+                animateCounter('ready-employees', readyEmployees)
+                animateCounter('break-employees', breakEmployees)
+                animateCounter('active-requests', activeRequests)
+                
+            } catch (error) {
+                console.error('Error updating dashboard stats:', error)
+            }
+        }
+        
+        // Helper function to animate counting up to a number
+        function animateCounter(elementId, targetValue) {
+            const element = document.getElementById(elementId)
+            if (!element) return
+            
+            // Check if current value is a dash, in which case we want to animate from 0
+            const isInitialState = element.textContent === '-';
+            const currentValue = isInitialState ? 0 : (parseInt(element.textContent) || 0);
+            
+            // Add a pulse effect when numbers change
+            if (isInitialState || currentValue !== targetValue) {
+                element.classList.add('animate-pulse-once');
+                setTimeout(() => {
+                    element.classList.remove('animate-pulse-once');
+                }, 600);
+            }
+            
+            // If no change needed and not initial state, exit
+            if (!isInitialState && currentValue === targetValue) return;
+            
+            const diff = targetValue - currentValue;
+            const duration = 800; // ms
+            const steps = 20;
+            const increment = diff / steps;
+            let current = currentValue;
+            let step = 0;
+            
+            const timer = setInterval(() => {
+                step++;
+                current += increment;
+                
+                if (step >= steps) {
+                    clearInterval(timer);
+                    element.textContent = targetValue;
+                    // Add color based on value
+                    updateStatColor(element, targetValue);
+                } else {
+                    element.textContent = Math.round(current);
+                }
+            }, duration / steps);
+        }
+        
+        // Add color to stats based on value
+        function updateStatColor(element, value) {
+            // Reset previous color classes
+            element.classList.remove('text-green-600', 'text-amber-500', 'text-red-500', 'text-gray-700');
+            
+            // Default is gray
+            element.classList.add('text-gray-700');
+            
+            // If the element is from specific cards, apply different rules
+            if (element.id === 'ready-employees') {
+                if (value > 0) {
+                    element.classList.add('text-green-600');
+                    element.classList.remove('text-gray-700');
+                }
+            } else if (element.id === 'break-employees') {
+                if (value > 0) {
+                    element.classList.add('text-amber-500');
+                    element.classList.remove('text-gray-700');
+                }
+            } else if (element.id === 'active-requests') {
+                if (value > 5) {
+                    element.classList.add('text-red-500');
+                    element.classList.remove('text-gray-700');
+                } else if (value > 0) {
+                    element.classList.add('text-amber-500');
+                    element.classList.remove('text-gray-700');
+                }
             }
         }
 
@@ -757,51 +1894,191 @@
             // Update button states
             document.getElementById('prev-page').disabled = currentPage === 0;
             document.getElementById('next-page').disabled = endIndex >= allRequests.length;
+            
+            // Update sort order icon in the dropdown
+            updateSortIcon();
 
-            requestsTable.innerHTML = currentPageData.map(request => `
-                <tr class="clickable-row animate-fade-in" onclick="toggleExpandedRow(this, '${request.id}')">
-                    <td class="font-medium text-gray-900">${request.customer_name || ''}</td>
-                    <td>${request.phone_number || ''}</td>
-                    <td>
-                        <span class="status-pill status-${request.status}">
-                            <i class="fas fa-${getStatusIcon(request.status)}"></i>
-                            ${formatRequestStatus(request.status)}
-                        </span>
-                    </td>
-                    <td>${request.sales_assignee || ''}</td>
-                    <td>${formatDate(request.created_at)}</td>
-                    <td>
-                        <button 
-                            onclick="event.stopPropagation(); openUpdateModal('${request.id}')" 
-                            class="btn btn-update"
-                            title="Update request status and notes"
-                        >
-                            <i class="fas fa-edit mr-1"></i>
-                            Update
-                        </button>
-                    </td>
-                </tr>
-                <tr class="expanded-content hidden" id="expanded-${request.id}">
-                    <td colspan="6">
-                        <div class="notes-section">
-                            <div class="notes-card">
-                                <div class="notes-title">
-                                    <i class="fas fa-comment text-blue-500"></i>
-                                    Sales Notes
+            // Get the current rows in the table
+            const existingRows = Array.from(requestsTable.querySelectorAll('tr:not(.expanded-content)'));
+            const existingRowMap = {};
+            existingRows.forEach(row => {
+                const rowId = row.getAttribute('data-id');
+                if (rowId) {
+                    existingRowMap[rowId] = row;
+                }
+            });
+            
+            // Create a document fragment to minimize DOM operations
+            const fragment = document.createDocumentFragment();
+            const updatedRowIds = new Set();
+            
+            // Process each request
+            currentPageData.forEach(request => {
+                updatedRowIds.add(request.id);
+                
+                // Check if this row already exists
+                if (existingRowMap[request.id]) {
+                    // Update existing row instead of creating new one
+                    const existingRow = existingRowMap[request.id];
+                    existingRow.classList.add('row-updated');
+                    
+                    // Update content of cells (except the expanded row)
+                    const cells = existingRow.querySelectorAll('td');
+                    if (cells.length >= 6) {
+                        cells[0].innerHTML = `<span class="font-medium text-gray-900">${request.customer_name || ''}</span>`;
+                        cells[1].textContent = request.phone_number || '';
+                        cells[2].innerHTML = `
+                            <span class="status-pill status-${request.status}">
+                                <i class="fas fa-${getStatusIcon(request.status)}"></i>
+                                ${formatRequestStatus(request.status)}
+                            </span>
+                        `;
+                        cells[3].textContent = request.sales_assignee || '';
+                        cells[4].textContent = formatDate(request.created_at);
+                    }
+                    
+                    // Also update expanded content if it exists
+                    const expandedRow = document.getElementById(`expanded-${request.id}`);
+                    if (expandedRow) {
+                        const notesSection = expandedRow.querySelector('.notes-section');
+                        if (notesSection) {
+                            notesSection.innerHTML = `
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-comment text-blue-500"></i>
+                                        Sales Notes
+                                    </div>
+                                    <p class="text-gray-600">${request.notes || 'No sales notes available'}</p>
                                 </div>
-                                <p class="text-gray-600">${request.notes || 'No sales notes available'}</p>
-                            </div>
-                            <div class="notes-card">
-                                <div class="notes-title">
-                                    <i class="fas fa-note-sticky text-green-500"></i>
-                                    Non-Voice Notes
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-note-sticky text-green-500"></i>
+                                        Non-Voice Notes
+                                    </div>
+                                    <p class="text-gray-600">${request.non_voice_notes || 'No non-voice notes added yet'}</p>
                                 </div>
-                                <p class="text-gray-600">${request.non_voice_notes || 'No non-voice notes added yet'}</p>
+                            `;
+                        }
+                    }
+                    
+                    // Add a brief highlight animation
+                    setTimeout(() => {
+                        existingRow.classList.add('row-highlight');
+                        setTimeout(() => {
+                            existingRow.classList.remove('row-highlight');
+                            existingRow.classList.remove('row-updated');
+                        }, 1000);
+                    }, 10);
+                    
+                } else {
+                    // Create new row with enter animation
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'clickable-row animate-slide-in';
+                    newRow.setAttribute('data-id', request.id);
+                    newRow.onclick = () => toggleExpandedRow(newRow, request.id);
+                    
+                    newRow.innerHTML = `
+                        <td class="font-medium text-gray-900">${request.customer_name || ''}</td>
+                        <td>${request.phone_number || ''}</td>
+                        <td>
+                            <span class="status-pill status-${request.status}">
+                                <i class="fas fa-${getStatusIcon(request.status)}"></i>
+                                ${formatRequestStatus(request.status)}
+                            </span>
+                        </td>
+                        <td>${request.sales_assignee || ''}</td>
+                        <td>${formatDate(request.created_at)}</td>
+                        <td>
+                            <button 
+                                onclick="event.stopPropagation(); openUpdateModal('${request.id}')" 
+                                class="btn btn-update"
+                                title="Update request status and notes"
+                            >
+                                <i class="fas fa-edit mr-1"></i>
+                                Update
+                            </button>
+                        </td>
+                    `;
+                    
+                    fragment.appendChild(newRow);
+                    
+                    // Also create the expanded row (initially hidden)
+                    const expandedRow = document.createElement('tr');
+                    expandedRow.className = 'expanded-content hidden';
+                    expandedRow.id = `expanded-${request.id}`;
+                    
+                    expandedRow.innerHTML = `
+                        <td colspan="6">
+                            <div class="notes-section">
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-comment text-blue-500"></i>
+                                        Sales Notes
+                                    </div>
+                                    <p class="text-gray-600">${request.notes || 'No sales notes available'}</p>
+                                </div>
+                                <div class="notes-card">
+                                    <div class="notes-title">
+                                        <i class="fas fa-note-sticky text-green-500"></i>
+                                        Non-Voice Notes
+                                    </div>
+                                    <p class="text-gray-600">${request.non_voice_notes || 'No non-voice notes added yet'}</p>
+                                </div>
                             </div>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+                        </td>
+                    `;
+                    
+                    fragment.appendChild(expandedRow);
+                }
+            });
+            
+            // Remove rows that no longer exist in the data
+            existingRows.forEach(row => {
+                const rowId = row.getAttribute('data-id');
+                if (rowId && !updatedRowIds.has(rowId)) {
+                    // Also find and remove the associated expanded row
+                    const expandedRow = document.getElementById(`expanded-${rowId}`);
+                    if (expandedRow) {
+                        // Add exit animation
+                        expandedRow.classList.add('animate-fade-out');
+                        setTimeout(() => {
+                            if (expandedRow.parentNode) {
+                                expandedRow.parentNode.removeChild(expandedRow);
+                            }
+                        }, 300);
+                    }
+                    
+                    // Add exit animation to main row
+                    row.classList.add('animate-fade-out');
+                    setTimeout(() => {
+                        if (row.parentNode) {
+                            row.parentNode.removeChild(row);
+                        }
+                    }, 300);
+                }
+            });
+            
+            // Add any new rows
+            requestsTable.appendChild(fragment);
+        }
+        
+        // Update the sort icon in the dropdown to reflect current sort order
+        function updateSortIcon() {
+            const sortOrderSelect = document.getElementById('sort-order');
+            const sortIcon = document.querySelector('.sort-selector .fa-sort-amount-down');
+            
+            if (sortOrderSelect && sortIcon) {
+                const currentSort = sortOrderSelect.value;
+                
+                // Update icon based on current sort
+                if (currentSort === 'asc') {
+                    // Oldest first - up arrow
+                    sortIcon.className = 'fas fa-sort-amount-up text-gray-500 text-sm';
+                } else {
+                    // Newest first - down arrow
+                    sortIcon.className = 'fas fa-sort-amount-down text-gray-500 text-sm';
+                }
+            }
         }
 
         // Helper function to get status icon
@@ -830,19 +2107,29 @@
 
         // Toggle expanded row
         function toggleExpandedRow(row, requestId) {
-            const expandedRow = document.getElementById(`expanded-${requestId}`)
-            const allExpandedRows = document.querySelectorAll('.expanded-content')
+            if (!row || !requestId) {
+                console.error('Invalid row or requestId provided to toggleExpandedRow');
+                return;
+            }
+
+            const expandedRow = document.getElementById(`expanded-${requestId}`);
+            if (!expandedRow) {
+                console.error(`Expanded row with id expanded-${requestId} not found`);
+                return;
+            }
+
+            const allExpandedRows = document.querySelectorAll('.expanded-content');
             
             // Close all other expanded rows
             allExpandedRows.forEach(r => {
                 if (r.id !== `expanded-${requestId}`) {
-                    r.classList.add('hidden')
+                    r.classList.add('hidden');
                 }
-            })
+            });
 
             // Toggle clicked row
-            expandedRow.classList.toggle('hidden')
-            row.classList.toggle('expanded-row')
+            expandedRow.classList.toggle('hidden');
+            row.classList.toggle('expanded-row');
         }
 
         // Reassign requests when going on break
@@ -895,13 +2182,17 @@
                     return // No unassigned requests
                 }
 
+                // Set current timestamp for assignment
+                const currentTime = new Date().toISOString()
+
                 // Update all unassigned requests to be assigned to current user
                 const { error: updateError } = await supabase
                     .from('requests')
                     .update({ 
                         assigned_to: currentUser.assignee,
                         status: 'in-progress',
-                        updated_at: new Date().toISOString()
+                        assigned_at: currentTime,
+                        updated_at: currentTime
                     })
                     .is('assigned_to', null)
                     .eq('status', 'open')
@@ -922,6 +2213,14 @@
         // Open update modal
         async function openUpdateModal(requestId) {
             try {
+                // Reset all update buttons to default state
+                const allUpdateButtons = document.querySelectorAll('.btn-update');
+                allUpdateButtons.forEach(button => {
+                    button.innerHTML = '<i class="fas fa-edit mr-1"></i> Update';
+                    button.className = 'btn btn-update';
+                    button.disabled = false;
+                });
+                
                 const { data: request, error } = await supabase
                     .from('requests')
                     .select('*')
@@ -1006,6 +2305,14 @@
             if (warningContainer) {
                 warningContainer.remove()
             }
+            
+            // Reset the submit button back to its original state
+            const submitButton = document.querySelector('#update-form button[type="submit"]')
+            if (submitButton) {
+                submitButton.innerHTML = '<i class="fas fa-save mr-2"></i> Update'
+                submitButton.className = 'btn btn-primary'
+                submitButton.disabled = false
+            }
         }
 
         // Handle update form submission
@@ -1023,15 +2330,36 @@
                 const originalButtonText = submitButton.innerHTML
                 submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Updating...'
                 submitButton.disabled = true
+                
+                // Prepare update data
+                const currentTime = new Date().toISOString()
+                const updateData = {
+                    status,
+                    non_voice_notes: nonVoiceNotes,
+                    updated_at: currentTime
+                }
+                
+                // Try to check if this is the first response
+                try {
+                    const { data: requestData } = await supabase
+                        .from('requests')
+                        .select('first_response_time')
+                        .eq('id', requestId)
+                        .single()
+                        
+                    // If this is the first response (and column exists), set first_response_time
+                    if (requestData && requestData.first_response_time === null) {
+                        updateData.first_response_time = currentTime
+                    }
+                } catch (checkError) {
+                    // If there's an error (e.g., column doesn't exist yet), just continue
+                    console.log('Note: Unable to check first_response_time:', checkError)
+                }
 
-                // Update the request with new status and notes
+                // Update the request
                 const { error } = await supabase
                     .from('requests')
-                    .update({
-                        status,
-                        non_voice_notes: nonVoiceNotes,
-                        updated_at: new Date().toISOString()
-                    })
+                    .update(updateData)
                     .eq('id', requestId)
 
                 if (error) throw error
@@ -1061,7 +2389,7 @@
                 
                 // Reset button state
                 const submitButton = e.target.querySelector('button[type="submit"]')
-                submitButton.innerHTML = originalButtonText
+                submitButton.innerHTML = '<i class="fas fa-save mr-2"></i> Update'
                 submitButton.disabled = false
                 
                 // Show error message
@@ -1368,17 +2696,29 @@
                     },
                     (payload) => {
                         console.log('Request update received:', payload);
-                        loadAssignedRequests();
+                        // Instead of auto-refreshing, update the badge
+                        const refreshBtn = document.getElementById('refresh-btn');
+                        if (refreshBtn) {
+                            const existingBadge = refreshBtn.querySelector('.request-badge');
+                            const currentCount = existingBadge ? parseInt(existingBadge.textContent) : 0;
+                            
+                            // Create or update badge
+                            const badge = existingBadge || document.createElement('span');
+                            badge.className = 'request-badge absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 animate-pulse';
+                            badge.textContent = currentCount + 1;
+                            refreshBtn.style.position = 'relative';
+                            
+                            if (!existingBadge) {
+                                refreshBtn.appendChild(badge);
+                            }
+                            
+                            // Update tooltip
+                            refreshBtn.title = `${currentCount + 1} new request${currentCount + 1 > 1 ? 's' : ''} available. Click to refresh.`;
+                        }
                     }
                 )
                 .subscribe((status) => {
                     console.log("Request subscription status:", status);
-                    
-                    // Set up periodic request refresh as a fallback
-                    setInterval(() => {
-                        console.log("Periodic request refresh");
-                        loadAssignedRequests();
-                    }, 30000); // Refresh every 30 seconds
                 });
             
             // Subscribe to open request changes that may need assignment
@@ -1403,6 +2743,136 @@
                 )
                 .subscribe((status) => {
                     console.log("Open requests subscription status:", status);
+                });
+                
+            // Subscribe to notifications
+            console.log("Setting up notifications subscription");
+            const notificationsSubscription = supabase
+                .channel('notifications-' + currentUser.email.replace('@', '-'))
+                .on('postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `recipient_email=eq."${currentUser.email}"`
+                    },
+                    (payload) => {
+                        console.log('New notification received:', payload);
+                        if (payload.new) {
+                            // Show the notification
+                            const notificationEl = document.createElement('div');
+                            notificationEl.className = 'notification';
+                            
+                            if (payload.new.type === 'sla_alert') {
+                                notificationEl.style.borderLeft = '4px solid #ef4444';
+                                notificationEl.style.backgroundColor = '#fee2e2';
+                            } else {
+                                notificationEl.style.borderLeft = '4px solid #3b82f6';
+                            }
+                            
+                            notificationEl.innerHTML = `
+                                <div class="notification-title">
+                                    <i class="fas fa-${payload.new.type === 'sla_alert' ? 'exclamation-circle text-red-600' : 'info-circle text-blue-600'}"></i>
+                                    ${payload.new.title}
+                                </div>
+                                <p class="notification-message">
+                                    ${payload.new.message}
+                                </p>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    ${new Date(payload.new.created_at).toLocaleString()}
+                                </div>
+                                <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onclick="this.parentNode.remove(); markNotificationRead('${payload.new.id}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            `;
+                            
+                            // Add to container
+                            const container = document.getElementById('notification-container');
+                            if (container) {
+                                container.appendChild(notificationEl);
+                                
+                                // Auto-remove after 10 seconds
+                                setTimeout(() => {
+                                    notificationEl.style.opacity = '0';
+                                    notificationEl.style.transform = 'translateX(100%)';
+                                    setTimeout(() => {
+                                        notificationEl.remove();
+                                        markNotificationRead(payload.new.id);
+                                    }, 300);
+                                }, 10000);
+                            }
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    console.log("Notifications subscription status:", status);
+                });
+
+            // Subscribe to personal notifications channel
+            const personalChannel = `private-${currentUser.email.replace('@', '-')}`;
+            console.log('Subscribing to personal channel:', personalChannel);
+            
+            supabase
+                .channel(personalChannel)
+                .on('broadcast', { event: '*' }, async payload => {
+                    console.log('Broadcast received:', payload);
+                    if (payload.event === 'sla_reminder') {
+                        console.log('SLA reminder received:', payload);
+                        
+                        // Create and show notification
+                        const notificationEl = document.createElement('div');
+                        notificationEl.className = 'notification animate-fade-in';
+                        notificationEl.style.borderLeft = '4px solid #ef4444';
+                        notificationEl.style.backgroundColor = '#fee2e2';
+                        
+                        notificationEl.innerHTML = `
+                            <div class="notification-title flex items-center">
+                                <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                                <span class="font-semibold">SLA Reminder</span>
+                            </div>
+                            <div class="notification-message mt-2">
+                                <div class="mb-1">
+                                    <i class="fas fa-user text-gray-600 mr-1"></i>
+                                    <strong>Customer:</strong> ${payload.payload.customerName}
+                                </div>
+                                <div class="mb-1">
+                                    <i class="fas fa-phone text-gray-600 mr-1"></i>
+                                    <strong>Phone:</strong> ${payload.payload.phoneNumber}
+                                </div>
+                                <div class="text-sm text-red-600">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    This request requires immediate attention!
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2 flex items-center">
+                                <i class="fas fa-calendar-alt mr-1"></i>
+                                ${new Date(payload.payload.timestamp).toLocaleString()}
+                            </div>
+                            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onclick="this.parentNode.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        
+                        // Add to container
+                        const container = document.getElementById('notification-container');
+                        if (container) {
+                            container.appendChild(notificationEl);
+                            
+                            // Auto-remove after 10 seconds
+                            setTimeout(() => {
+                                notificationEl.style.opacity = '0';
+                                notificationEl.style.transform = 'translateX(100%)';
+                                setTimeout(() => {
+                                    notificationEl.remove();
+                                }, 300);
+                            }, 10000);
+                        } else {
+                            console.error('Notification container not found');
+                        }
+                    }
+                })
+                .subscribe(status => {
+                    console.log('Personal channel subscription status:', status);
                 });
         }
 
@@ -1500,6 +2970,138 @@
                 notification.style.transform = 'translateX(100%)';
                 setTimeout(() => notification.remove(), 300);
             }, 5000);
+        }
+
+        // Function to check for existing unread notifications
+        async function checkUnreadNotifications() {
+            try {
+                console.log("Checking for unread notifications");
+                // No need to check notifications table anymore
+                return;
+            } catch (error) {
+                console.error('Error checking unread notifications:', error);
+            }
+        }
+
+        // Function to create the notifications table
+        async function createNotificationsTable() {
+            // No need to create notifications table anymore
+            return;
+        }
+
+        // Function to mark a notification as read
+        async function markNotificationRead(notificationId) {
+            // No need to mark notifications as read anymore
+            return;
+        }
+
+        // Function to mark multiple notifications as read
+        async function markMultipleNotificationsRead(notificationIds) {
+            // No need to mark multiple notifications as read anymore
+            return;
+        }
+
+        // Setup real-time subscriptions
+        function setupRealTimeSubscriptions() {
+            // Subscribe to request changes
+            supabase
+                .channel('requests')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, payload => {
+                    console.log('Request change received:', payload);
+                    // Update badge instead of auto-refresh
+                    const badge = document.getElementById('new-requests-badge');
+                    if (badge) {
+                        const currentCount = parseInt(badge.textContent) || 0;
+                        badge.textContent = currentCount + 1;
+                        badge.classList.remove('hidden');
+                    }
+                })
+                .subscribe();
+
+            // Subscribe to open request changes
+            supabase
+                .channel('open-requests')
+                .on('postgres_changes', { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'requests',
+                    filter: 'status=eq.open'
+                }, payload => {
+                    console.log('Open request change received:', payload);
+                    // Update badge for new open requests
+                    const badge = document.getElementById('new-requests-badge');
+                    if (badge) {
+                        const currentCount = parseInt(badge.textContent) || 0;
+                        badge.textContent = currentCount + 1;
+                        badge.classList.remove('hidden');
+                    }
+                })
+                .subscribe();
+
+            // Subscribe to personal notifications channel
+            const personalChannel = `private-${currentUser.email.replace('@', '-')}`;
+            console.log('Subscribing to personal channel:', personalChannel);
+            
+            supabase
+                .channel(personalChannel)
+                .on('broadcast', { event: '*' }, payload => {
+                    console.log('Broadcast received:', payload);
+                    if (payload.event === 'sla_reminder') {
+                        // Create and show notification
+                        const notificationEl = document.createElement('div');
+                        notificationEl.className = 'notification animate-fade-in';
+                        notificationEl.style.borderLeft = '4px solid #ef4444';
+                        notificationEl.style.backgroundColor = '#fee2e2';
+                        
+                        notificationEl.innerHTML = `
+                            <div class="notification-title flex items-center">
+                                <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                                <span class="font-semibold">SLA Reminder</span>
+                            </div>
+                            <div class="notification-message mt-2">
+                                <div class="mb-1">
+                                    <i class="fas fa-user text-gray-600 mr-1"></i>
+                                    <strong>Customer:</strong> ${payload.payload.customerName}
+                                </div>
+                                <div class="mb-1">
+                                    <i class="fas fa-phone text-gray-600 mr-1"></i>
+                                    <strong>Phone:</strong> ${payload.payload.phoneNumber}
+                                </div>
+                                <div class="text-sm text-red-600">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    This request requires immediate attention!
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2 flex items-center">
+                                <i class="fas fa-calendar-alt mr-1"></i>
+                                ${new Date(payload.payload.timestamp).toLocaleString()}
+                            </div>
+                            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onclick="this.parentNode.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        
+                        // Add to container
+                        const container = document.getElementById('notification-container');
+                        if (container) {
+                            container.appendChild(notificationEl);
+                            
+                            // Auto-remove after 10 seconds
+                            setTimeout(() => {
+                                notificationEl.style.opacity = '0';
+                                notificationEl.style.transform = 'translateX(100%)';
+                                setTimeout(() => {
+                                    notificationEl.remove();
+                                }, 300);
+                            }, 10000);
+                        } else {
+                            console.error('Notification container not found');
+                        }
+                    }
+                })
+                .subscribe(status => {
+                    console.log('Personal channel subscription status:', status);
+                });
         }
     </script>
 </body>
