@@ -1654,6 +1654,12 @@
                 if (refreshButton) {
                     refreshButton.classList.add('btn-loading');
                     refreshButton.innerHTML = 'Loading...';
+                    
+                    // Remove badge if it exists
+                    const badge = refreshButton.querySelector('.request-badge');
+                    if (badge) {
+                        badge.remove();
+                    }
                 }
                 
                 // Add loading state to sort dropdown
@@ -1664,6 +1670,9 @@
                 // Show small loading indicator in table
                 const requestsTable = document.getElementById('requests-table');
                 if (requestsTable) {
+                    // Clear table first
+                    requestsTable.innerHTML = '';
+                    
                     const loadingRow = document.createElement('tr');
                     loadingRow.id = 'loading-indicator-row';
                     loadingRow.innerHTML = `
@@ -1672,16 +1681,11 @@
                             Loading...
                         </td>
                     `;
-                    
-                    // Insert at the top
-                    if (requestsTable.firstChild) {
-                        requestsTable.insertBefore(loadingRow, requestsTable.firstChild);
-                    } else {
-                        requestsTable.appendChild(loadingRow);
-                    }
+                    requestsTable.appendChild(loadingRow);
                 }
                 
                 // Fetch requests with server-side sorting
+                console.log("Fetching with sort order:", sortOrder, "ascending:", sortOrder === 'asc');
                 const { data: requests, error } = await supabase
                     .from('requests')
                     .select('*')
@@ -1696,9 +1700,25 @@
                 if (loadingIndicator && loadingIndicator.parentNode) {
                     loadingIndicator.parentNode.removeChild(loadingIndicator);
                 }
-
-                // Store all requests for pagination
+                
+                // Ensure the data is properly sorted in memory
                 allRequests = requests ? [...requests] : [];
+                
+                // Double-check sort order (in case server sort didn't work correctly)
+                allRequests.sort((a, b) => {
+                    const dateA = new Date(a.created_at).getTime();
+                    const dateB = new Date(b.created_at).getTime();
+                    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+                });
+                
+                console.log("Sorted requests:", allRequests.map(r => ({ 
+                    id: r.id, 
+                    name: r.customer_name, 
+                    date: r.created_at 
+                })));
+                
+                // Reset to first page when refreshing
+                currentPage = 0;
                 
                 // Display the current page - this will update the UI
                 displayCurrentPage();
@@ -1908,21 +1928,24 @@
                 }
             });
             
+            // Clear the table first - this ensures the order will be correct
+            requestsTable.innerHTML = '';
+            
             // Create a document fragment to minimize DOM operations
             const fragment = document.createDocumentFragment();
             const updatedRowIds = new Set();
             
-            // Process each request
+            // Process each request in the proper sort order
             currentPageData.forEach(request => {
                 updatedRowIds.add(request.id);
                 
-                // Check if this row already exists
+                // Check if this row already exists in our map
                 if (existingRowMap[request.id]) {
-                    // Update existing row instead of creating new one
+                    // Update existing row
                     const existingRow = existingRowMap[request.id];
                     existingRow.classList.add('row-updated');
                     
-                    // Update content of cells (except the expanded row)
+                    // Update content of cells
                     const cells = existingRow.querySelectorAll('td');
                     if (cells.length >= 6) {
                         cells[0].innerHTML = `<span class="font-medium text-gray-900">${request.customer_name || ''}</span>`;
@@ -1937,12 +1960,24 @@
                         cells[4].textContent = formatDate(request.created_at);
                     }
                     
-                    // Also update expanded content if it exists
-                    const expandedRow = document.getElementById(`expanded-${request.id}`);
-                    if (expandedRow) {
-                        const notesSection = expandedRow.querySelector('.notes-section');
-                        if (notesSection) {
-                            notesSection.innerHTML = `
+                    // Add to fragment in the new position (respecting sort order)
+                    fragment.appendChild(existingRow);
+                    
+                    // Create or update expanded content
+                    const expandedId = `expanded-${request.id}`;
+                    let expandedRow = document.getElementById(expandedId);
+                    
+                    if (!expandedRow) {
+                        // Create new expanded row if it doesn't exist
+                        expandedRow = document.createElement('tr');
+                        expandedRow.className = 'expanded-content hidden';
+                        expandedRow.id = expandedId;
+                    }
+                    
+                    // Update content
+                    expandedRow.innerHTML = `
+                        <td colspan="6">
+                            <div class="notes-section">
                                 <div class="notes-card">
                                     <div class="notes-title">
                                         <i class="fas fa-comment text-blue-500"></i>
@@ -1957,9 +1992,12 @@
                                     </div>
                                     <p class="text-gray-600">${request.non_voice_notes || 'No non-voice notes added yet'}</p>
                                 </div>
-                            `;
-                        }
-                    }
+                            </div>
+                        </td>
+                    `;
+                    
+                    // Add expanded row to fragment in correct order
+                    fragment.appendChild(expandedRow);
                     
                     // Add a brief highlight animation
                     setTimeout(() => {
@@ -2032,33 +2070,7 @@
                 }
             });
             
-            // Remove rows that no longer exist in the data
-            existingRows.forEach(row => {
-                const rowId = row.getAttribute('data-id');
-                if (rowId && !updatedRowIds.has(rowId)) {
-                    // Also find and remove the associated expanded row
-                    const expandedRow = document.getElementById(`expanded-${rowId}`);
-                    if (expandedRow) {
-                        // Add exit animation
-                        expandedRow.classList.add('animate-fade-out');
-                        setTimeout(() => {
-                            if (expandedRow.parentNode) {
-                                expandedRow.parentNode.removeChild(expandedRow);
-                            }
-                        }, 300);
-                    }
-                    
-                    // Add exit animation to main row
-                    row.classList.add('animate-fade-out');
-                    setTimeout(() => {
-                        if (row.parentNode) {
-                            row.parentNode.removeChild(row);
-                        }
-                    }, 300);
-                }
-            });
-            
-            // Add any new rows
+            // Add all rows to the table in the correct sort order
             requestsTable.appendChild(fragment);
         }
         
