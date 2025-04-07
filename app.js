@@ -112,6 +112,12 @@ function showDashboard() {
                 loadAdminData()
             }
             break
+        case 'back-office':
+            window.location.href = 'tickets.html'
+            break
+        case 'admin-back-office':
+            window.location.href = 'backofficeadmin.html'
+            break
     }
 }
 
