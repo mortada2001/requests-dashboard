@@ -1,0 +1,2390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Back Office Cases</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .expanded-row {
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        
+        .expanded-content {
+            padding: 1rem 2rem;
+            background-color: #f8fafc;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .notes-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .notes-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .notes-title {
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clickable-row:hover {
+            background-color: #f1f5f9;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Add styles for status types */
+        .status-ready {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-break {
+            background-color: #ffedd5;
+            color: #9a3412;
+        }
+        
+        .status-offline {
+            background-color: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .status-open {
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        .status-in-progress {
+            background-color: #fef9c3;
+            color: #854d0e;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-in-progress::before,
+        .status-in-progress::after,
+        .status-in-progress span::before {
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .fa-spinner {
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes loadingDot {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+        
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-request-issue {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .status-waiting-request {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .btn-disabled {
+            opacity: 0.8;
+            cursor: not-allowed;
+            background-color: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-disabled .fa-check-circle {
+            color: #10b981;
+        }
+        
+        .btn-disabled:hover {
+            background-color: #f3f4f6;
+        }
+        
+        /* Pagination styles */
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        #pagination-controls {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+        }
+        
+        #pagination-info {
+            font-weight: 500;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Status dropdown styles */
+        .status-dropdown {
+            position: relative;
+        }
+        
+        .status-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            z-index: 50;
+            min-width: 200px;
+            overflow: hidden;
+            animation: slideDown 0.2s ease-out;
+        }
+        
+        .status-menu-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-menu-item:hover {
+            background-color: #f9fafb;
+        }
+        
+        /* Enhanced sort selector */
+        .sort-selector {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .sort-selector:hover {
+            border-color: #d1d5db;
+        }
+        
+        .sort-selector select {
+            border: none;
+            background: transparent;
+            padding: 0.25rem;
+            font-size: 0.875rem;
+            color: #4b5563;
+            cursor: pointer;
+            margin-left: 0.25rem;
+            appearance: none;
+            padding-right: 1.5rem;
+        }
+        
+        .sort-selector .sort-icon {
+            color: #6b7280;
+            position: relative;
+            pointer-events: none;
+            right: 1.5rem;
+        }
+        
+        /* Status with timer */
+        .status-timer {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+        }
+        
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            z-index: 9999;
+            max-width: 350px;
+            animation: slideInRight 0.3s ease-out;
+            border-left: 4px solid #3b82f6;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            color: #1f2937;
+        }
+        
+        .notification-message {
+            font-size: 0.875rem;
+            color: #4b5563;
+            line-height: 1.4;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* New animation styles */
+        .animate-slide-in {
+            animation: slideIn 0.4s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-fade-out {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+
+        .row-highlight {
+            animation: highlight 1s ease-in-out;
+        }
+
+        @keyframes highlight {
+            0% { background-color: rgba(59, 130, 246, 0.1); }
+            50% { background-color: rgba(59, 130, 246, 0.2); }
+            100% { background-color: transparent; }
+        }
+
+        /* Stats cards animations */
+        .stat-card {
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                transparent 0%,
+                rgba(255, 255, 255, 0.5) 50%,
+                transparent 100%
+            );
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .stat-card:hover::after {
+            transform: translateX(100%);
+        }
+
+        /* Animated refresh button */
+        #refresh-btn {
+            transition: all 0.2s ease;
+        }
+
+        #refresh-btn:active {
+            /* Remove the rotation */
+            transform: translateY(1px);
+        }
+
+        /* Replace with a standard loading indicator */
+        .btn-loading {
+            position: relative;
+            pointer-events: none; /* Prevent clicks while loading */
+            background-color: #e5e7eb !important;
+        }
+
+        .btn-loading:after {
+            content: '';
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-top-color: #fff;
+            animation: simple-spin 0.6s linear infinite;
+            position: absolute;
+            right: 0.75rem;
+            top: calc(50% - 0.5rem);
+        }
+
+        @keyframes simple-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Keep this for Font Awesome icons */
+        .fa-spin {
+            animation: simple-spin 1s linear infinite;
+        }
+
+        /* Table animations */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table th {
+            background-color: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .table th:hover {
+            background-color: #f1f5f9;
+        }
+
+        .table td {
+            transition: all 0.3s ease;
+        }
+
+        /* Pulse animation for counters */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-pulse-once {
+            animation: pulse 0.6s ease-in-out;
+        }
+
+        .update-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #3b82f6;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        .update-badge.fade-out {
+            animation: slideOutDown 0.3s ease-in forwards;
+        }
+
+        .apply-updates {
+            background-color: white;
+            color: #3b82f6;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .apply-updates:hover {
+            background-color: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+        @keyframes slideInUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideOutDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(20px); opacity: 0; }
+        }
+
+        /* Add styles for the request badge */
+        .request-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Add animation for in-progress icon */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fa-spinner {
+            animation: spin 1.5s linear infinite;
+        }
+
+        /* Enhanced Table Styles */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            background-color: white;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 1rem;
+        }
+
+        .table th {
+            background-color: #f8fafc;
+            padding: 1rem;
+            font-weight: 600;
+            text-align: left;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+
+        .table th:hover {
+            background-color: #f1f5f9;
+        }
+
+        .table td {
+            padding: 1rem;
+            color: #4b5563;
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .table tr {
+            transition: all 0.2s ease;
+        }
+
+        .table tr:hover {
+            background-color: #f8fafc;
+            transform: translateX(4px);
+        }
+
+        .table tr:hover td {
+            color: #1f2937;
+        }
+
+        /* Status Menu Enhancements */
+        .status-dropdown {
+            position: relative;
+            z-index: 50;
+        }
+
+        #status-indicator {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        #status-indicator:hover {
+            border-color: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        #status-indicator i {
+            transition: transform 0.2s ease;
+        }
+
+        #status-indicator.active i {
+            transform: rotate(180deg);
+        }
+
+        .status-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            min-width: 200px;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .status-menu.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .status-menu-item {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #4b5563;
+        }
+
+        .status-menu-item:hover {
+            background-color: #f8fafc;
+            color: #1f2937;
+            padding-left: 1.25rem;
+        }
+
+        .status-menu-item.active {
+            background-color: #f1f5f9;
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .status-menu-item i {
+            width: 1rem;
+            text-align: center;
+        }
+
+        .status-menu-item .status-timer {
+            margin-left: auto;
+            font-size: 0.75rem;
+            color: #6b7280;
+            opacity: 0.8;
+        }
+
+        .status-menu-item:hover .status-timer {
+            opacity: 1;
+        }
+
+        /* Status Colors */
+        .status-ready {
+            color: #059669;
+            background-color: #d1fae5;
+        }
+
+        .status-coffee-break {
+            color: #d97706;
+            background-color: #fef3c7;
+        }
+
+        .status-lunch-break {
+            color: #dc2626;
+            background-color: #fee2e2;
+        }
+
+        /* Status Timer */
+        .status-timer-container {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .status-timer-container i {
+            font-size: 0.875rem;
+        }
+
+        .status-timer-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background-color: #e5e7eb;
+            transition: width 1s linear;
+        }
+
+        .status-timer-progress.active {
+            background-color: #3b82f6;
+        }
+
+        .status-indicator {
+            position: relative;
+            min-width: 180px;
+        }
+
+        .status-indicator:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #status-duration {
+            border-left: 1px solid #e5e7eb;
+            margin-left: 12px;
+            padding-left: 12px;
+        }
+
+        .status-dropdown {
+            position: relative;
+            min-width: 240px;
+        }
+
+        .status-indicator {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-menu-item {
+            transition: all 0.2s ease;
+        }
+
+        .status-menu-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .status-menu-item:not(:last-child) {
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        /* Modern Done button */
+        .btn-done {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-done:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #059669, #047857);
+        }
+
+        .btn-done:active {
+            transform: translateY(0);
+        }
+
+        .btn-done::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-done:hover::after {
+            opacity: 1;
+        }
+
+        .btn-done i {
+            margin-right: 0.5rem;
+            font-size: 1rem;
+        }
+
+        /* Add notification badge styles */
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 9999px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Enhanced in-progress animation */
+        .status-in-progress {
+            background-color: #fef9c3;
+            color: #854d0e;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-in-progress::before {
+            content: '';
+            width: 3px;
+            height: 3px;
+            background: currentColor;
+            border-radius: 50%;
+            display: block;
+        }
+
+        @keyframes loadingDot {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        /* Update refresh button container */
+        .refresh-container {
+            position: relative;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading Overlay -->
+    <div id="loading" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+            <p class="mt-4 text-gray-600 font-medium">Loading...</p>
+        </div>
+    </div>
+
+    <div id="notification-container" class="fixed top-4 right-4 z-[9999] w-[350px] pointer-events-auto"></div>
+
+    <!-- Main App Container (hidden by default) -->
+    <div id="app" class="min-h-screen" style="display: none;">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <i class="fas fa-headset text-blue-600 text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold text-gray-800">FTTH BackOffice Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-user text-gray-400"></i>
+                            <span id="user-name" class="text-gray-600 font-medium"></span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="status-dropdown">
+                                <button id="status-indicator" class="status-indicator flex items-center space-x-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all cursor-pointer">
+                                    <span id="status-display" class="flex items-center">
+                                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                        <span class="font-medium text-gray-700">READY</span>
+                                    </span>
+                                    <span class="text-gray-400 text-sm border-l border-gray-200 ml-2 pl-2" id="status-duration">00:00:00</span>
+                                    <i class="fas fa-chevron-down text-gray-400 ml-2"></i>
+                                </button>
+                                <div id="status-menu" class="hidden absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                                    <div class="py-1">
+                                        <div class="status-menu-item flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer" data-status="ready">
+                                            <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                                            <span class="ml-3 font-medium text-gray-700">Ready</span>
+                                        </div>
+                                        <div class="status-menu-item flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer" data-status="coffee-break">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-coffee text-orange-500 text-lg"></i>
+                                                <span class="ml-3 font-medium text-gray-700">Coffee Break</span>
+                                            </div>
+                                            <span class="break-time-left text-sm text-orange-600"></span>
+                                        </div>
+                                        <div class="status-menu-item flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer" data-status="lunch-break">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-utensils text-red-500 text-lg"></i>
+                                                <span class="ml-3 font-medium text-gray-700">Lunch Break</span>
+                                            </div>
+                                            <span class="break-time-left text-sm text-red-600"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="mystats.html" class="btn btn-primary flex items-center">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            My Statistics
+                        </a>
+                        <button id="logout" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Break Time Progress Section -->
+        <div class="bg-white shadow-sm mt-4 mb-6">
+            <div class="max-w-7xl mx-auto px-6 py-4">
+                <div class="flex items-center justify-center space-x-12">
+                    <!-- Coffee Break Progress -->
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-orange-100 p-2 rounded-full">
+                            <i class="fas fa-coffee text-orange-500 text-xl"></i>
+                        </div>
+                        <div class="w-48">
+                            <div class="text-sm text-gray-700 flex justify-between mb-2">
+                                <span class="font-medium">Coffee Break</span>
+                                <span id="coffee-time-remaining" class="text-orange-600">30 min left</span>
+                            </div>
+                            <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div id="coffee-progress" class="h-full bg-orange-500 transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Lunch Break Progress -->
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-red-100 p-2 rounded-full">
+                            <i class="fas fa-utensils text-red-500 text-xl"></i>
+                        </div>
+                        <div class="w-48">
+                            <div class="text-sm text-gray-700 flex justify-between mb-2">
+                                <span class="font-medium">Lunch Break</span>
+                                <span id="lunch-time-remaining" class="text-red-600">40 min left</span>
+                            </div>
+                            <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div id="lunch-progress" class="h-full bg-red-500 transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <!-- Stats Section -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-chart-bar text-blue-500 mr-2"></i>
+                    Dashboard Stats
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                    <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-blue-500">Total Tickets</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="total-tickets">-</h3>
+                            </div>
+                            <div class="bg-blue-100 rounded-full p-3">
+                                <i class="fas fa-ticket-alt text-blue-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-green-500">Ready</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="ready-employees">-</h3>
+                            </div>
+                            <div class="bg-green-100 rounded-full p-3">
+                                <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border border-amber-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-amber-500">Coffee Break</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="coffee-break-employees">-</h3>
+                            </div>
+                            <div class="bg-amber-100 rounded-full p-3">
+                                <i class="fas fa-coffee text-amber-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border border-red-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-red-500">Lunch Break</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="lunch-break-employees">-</h3>
+                            </div>
+                            <div class="bg-red-100 rounded-full p-3">
+                                <i class="fas fa-utensils text-red-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-purple-500">AHT</p>
+                                <h3 class="text-2xl font-bold text-gray-700" id="avg-handling-time">-</h3>
+                            </div>
+                            <div class="bg-purple-100 rounded-full p-3">
+                                <i class="fas fa-clock text-purple-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assigned Requests -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-ticket-alt text-blue-500 mr-2"></i>
+                        Back Office Tickets
+                    </h2>
+                    <div class="flex items-center space-x-3">
+                        <div class="sort-selector flex items-center space-x-2">
+                            <i class="fas fa-sort-amount-down text-gray-500 text-sm"></i>
+                            <select id="sort-order" class="form-select text-sm">
+                                <option value="desc">Newest First</option>
+                                <option value="asc">Oldest First</option>
+                            </select>
+                        </div>
+                        <div class="search-container flex items-center space-x-2">
+                            <input type="text" id="ticket-search" placeholder="Search ticket ID..." 
+                                class="form-input text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                style="width: 200px;">
+                        </div>
+                        <div class="refresh-container relative">
+                            <button id="refresh-btn" class="btn btn-primary">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 text-sm">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-blue-700">
+                                <strong>Note:</strong> This table shows only <strong>in-progress</strong> tickets assigned to you. 
+                                Completed tickets can be found in your <a href="mystats.html" class="text-blue-600 underline">Statistics page</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-container overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tickets-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Tickets will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination Controls -->
+                <div id="pagination-controls" class="flex justify-between items-center mt-6 hidden">
+                    <div id="pagination-info" class="text-sm text-gray-500">
+                        Showing 1-50 of 100 tickets
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-page" onclick="prevPage()" class="btn btn-secondary btn-sm" disabled>
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Previous
+                        </button>
+                        <button id="next-page" onclick="nextPage()" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-chevron-right mr-1"></i>
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://pdcssepqmgzpkayzfqta.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkY3NzZXBxbWd6cGtheXpmcXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MzczMjksImV4cCI6MjA1NjQxMzMyOX0.NqN7b7itdA8Tz0sG4fzSI4Y19P5syYFWnmKwANbH1IY';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Global currentUser object
+        let currentUser = null;
+        let breakStartTime = null;
+        let currentBreakType = null;
+
+        // Break time limits (in minutes)
+        const BREAK_LIMITS = {
+            'coffee-break': 30,
+            'lunch-break': 40
+        };
+
+        // Get today's date in YYYY-MM-DD format
+        function getTodayDate() {
+            const today = new Date();
+            return today.toISOString().split('T')[0];
+        }
+
+        // Calculate minutes between two dates
+        function getMinutesBetweenDates(start, end) {
+            return Math.floor((end - start) / (1000 * 60));
+        }
+
+        // Get total break time for today
+        async function getTotalBreakTimeToday(breakType) {
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Start of today
+
+                const { data: breaks, error } = await supabase
+                    .from('employee_breaks')
+                    .select('start_time, end_time')
+                    .eq('employee_email', currentUser.email)
+                    .eq('break_type', breakType)
+                    .gte('start_time', today.toISOString());
+
+                if (error) throw error;
+
+                let totalMinutes = 0;
+                const now = new Date();
+
+                breaks.forEach(breakPeriod => {
+                    const startTime = new Date(breakPeriod.start_time);
+                    // If end_time is NULL and this is the current break, use current time
+                    // Otherwise use the recorded end_time
+                    const endTime = breakPeriod.end_time ? new Date(breakPeriod.end_time) : now;
+                    const durationMinutes = (endTime - startTime) / (1000 * 60);
+                    totalMinutes += durationMinutes;
+                });
+
+                return Math.round(totalMinutes);
+            } catch (error) {
+                console.error('Error calculating break time:', error);
+                return 0;
+            }
+        }
+
+        // Start a new break period
+        async function startBreak(breakType) {
+            try {
+                const { data, error } = await supabase
+                    .from('employee_breaks')
+                    .insert({
+                        employee_email: currentUser.email,
+                        break_type: breakType,
+                        start_time: new Date().toISOString(),
+                        end_time: null
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Store the current break record ID for ending it later
+                localStorage.setItem('currentBreakId', data.id);
+                
+            } catch (error) {
+                console.error('Error starting break:', error);
+                showNotification('Failed to start break', 'error');
+            }
+        }
+
+        // End current break period
+        async function endBreak() {
+            try {
+                const currentBreakId = localStorage.getItem('currentBreakId');
+                if (!currentBreakId) {
+                    console.warn('No current break ID found');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('employee_breaks')
+                    .update({
+                        end_time: new Date().toISOString()
+                    })
+                    .eq('id', currentBreakId);
+
+                if (error) throw error;
+
+                // Clear the current break ID
+                localStorage.removeItem('currentBreakId');
+                
+            } catch (error) {
+                console.error('Error ending break:', error);
+                showNotification('Failed to end break', 'error');
+            }
+        }
+
+        // Check if break limit is reached
+        async function isBreakLimitReached(breakType) {
+            const totalMinutes = await getTotalBreakTimeToday(breakType);
+            return totalMinutes >= BREAK_LIMITS[breakType];
+        }
+
+        // Update status display and menu
+        function updateStatusDisplay(status) {
+            const statusDisplay = document.querySelector('#status-display');
+            let icon, text, colorClass;
+            
+            switch (status) {
+                case 'ready':
+                    icon = 'check-circle';
+                    text = 'READY';
+                    colorClass = 'text-green-500';
+                    break;
+                case 'coffee-break':
+                    icon = 'coffee';
+                    text = 'COFFEE BREAK';
+                    colorClass = 'text-orange-500';
+                    break;
+                case 'lunch-break':
+                    icon = 'utensils';
+                    text = 'LUNCH BREAK';
+                    colorClass = 'text-red-500';
+                    break;
+            }
+
+            statusDisplay.innerHTML = `
+                <i class="fas fa-${icon} ${colorClass} mr-2"></i>
+                <span class="font-medium text-gray-700">${text}</span>
+            `;
+        }
+
+        // Update break progress bars and menu visibility
+        async function updateBreakProgress() {
+            try {
+                const coffeeBreakTime = await getTotalBreakTimeToday('coffee-break');
+                const lunchBreakTime = await getTotalBreakTimeToday('lunch-break');
+
+                // Update coffee break progress
+                const coffeeProgress = (coffeeBreakTime / BREAK_LIMITS['coffee-break']) * 100;
+                const coffeeRemaining = Math.max(0, BREAK_LIMITS['coffee-break'] - coffeeBreakTime);
+                document.getElementById('coffee-progress').style.width = `${Math.min(100, coffeeProgress)}%`;
+                document.getElementById('coffee-time-remaining').textContent = `${coffeeRemaining} min left`;
+
+                // Update lunch break progress
+                const lunchProgress = (lunchBreakTime / BREAK_LIMITS['lunch-break']) * 100;
+                const lunchRemaining = Math.max(0, BREAK_LIMITS['lunch-break'] - lunchBreakTime);
+                document.getElementById('lunch-progress').style.width = `${Math.min(100, lunchProgress)}%`;
+                document.getElementById('lunch-time-remaining').textContent = `${lunchRemaining} min left`;
+
+                // If either limit is reached and user is still in that break, force status to ready
+                if (currentUser.status === 'coffee-break' && coffeeBreakTime >= BREAK_LIMITS['coffee-break']) {
+                    await updateEmployeeStatus('ready', true);
+                    showNotification('Coffee break limit reached. Status set to Ready.', 'warning');
+                } else if (currentUser.status === 'lunch-break' && lunchBreakTime >= BREAK_LIMITS['lunch-break']) {
+                    await updateEmployeeStatus('ready', true);
+                    showNotification('Lunch break limit reached. Status set to Ready.', 'warning');
+                }
+
+                // Update menu items visibility and availability
+                const statusMenu = document.getElementById('status-menu');
+                if (statusMenu) {
+                    const menuItems = statusMenu.querySelectorAll('.status-menu-item');
+                    menuItems.forEach(item => {
+                        const itemStatus = item.getAttribute('data-status');
+                        
+                        // First hide current status
+                        if (itemStatus === currentUser.status) {
+                            item.style.display = 'none';
+                            return;
+                        }
+
+                        // Show other status options but handle break limits
+                        item.style.display = 'flex';
+                        
+                        if (itemStatus === 'coffee-break') {
+                            if (coffeeRemaining <= 0) {
+                                item.style.opacity = '0.5';
+                                item.style.pointerEvents = 'none';
+                                item.style.cursor = 'not-allowed';
+                                const timeSpan = item.querySelector('.break-time-left');
+                                if (timeSpan) {
+                                    timeSpan.textContent = 'Limit reached';
+                                }
+                            } else {
+                                item.style.opacity = '1';
+                                item.style.pointerEvents = 'auto';
+                                item.style.cursor = 'pointer';
+                                const timeSpan = item.querySelector('.break-time-left');
+                                if (timeSpan) {
+                                    timeSpan.textContent = `${coffeeRemaining} min left`;
+                                }
+                            }
+                        } else if (itemStatus === 'lunch-break') {
+                            if (lunchRemaining <= 0) {
+                                item.style.opacity = '0.5';
+                                item.style.pointerEvents = 'none';
+                                item.style.cursor = 'not-allowed';
+                                const timeSpan = item.querySelector('.break-time-left');
+                                if (timeSpan) {
+                                    timeSpan.textContent = 'Limit reached';
+                                }
+                            } else {
+                                item.style.opacity = '1';
+                                item.style.pointerEvents = 'auto';
+                                item.style.cursor = 'pointer';
+                                const timeSpan = item.querySelector('.break-time-left');
+                                if (timeSpan) {
+                                    timeSpan.textContent = `${lunchRemaining} min left`;
+                                }
+                            }
+                        }
+                    });
+
+                    // Check if any options are available
+                    const availableItems = Array.from(menuItems).filter(item => 
+                        item.style.display !== 'none' && 
+                        item.style.pointerEvents !== 'none'
+                    );
+
+                    const noOptionsMessage = statusMenu.querySelector('.no-options-message');
+                    if (availableItems.length === 0) {
+                        if (!noOptionsMessage) {
+                            const message = document.createElement('div');
+                            message.className = 'no-options-message px-4 py-3 text-sm text-gray-500 text-center';
+                            message.textContent = 'No status changes available';
+                            statusMenu.querySelector('.py-1').appendChild(message);
+                        }
+                    } else if (noOptionsMessage) {
+                        noOptionsMessage.remove();
+                    }
+                }
+
+                return { coffeeRemaining, lunchRemaining };
+            } catch (error) {
+                console.error('Error updating break progress:', error);
+            }
+        }
+
+        // Format status text for display
+        function formatStatusText(status) {
+            return status.split('-')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
+        // Format duration as HH:MM:SS
+        function formatDuration(startTime) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - startTime) / 1000);
+            const hours = Math.floor(diffInSeconds / 3600);
+            const minutes = Math.floor((diffInSeconds % 3600) / 60);
+            const seconds = diffInSeconds % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Update status display
+        function updateStatusDisplay(status) {
+            const statusDisplay = document.querySelector('#status-display');
+            let icon, text, colorClass;
+            
+            switch (status) {
+                case 'ready':
+                    icon = 'check-circle';
+                    text = 'READY';
+                    colorClass = 'text-green-500';
+                    break;
+                case 'coffee-break':
+                    icon = 'coffee';
+                    text = 'COFFEE BREAK';
+                    colorClass = 'text-orange-500';
+                    break;
+                case 'lunch-break':
+                    icon = 'utensils';
+                    text = 'LUNCH BREAK';
+                    colorClass = 'text-red-500';
+                    break;
+            }
+
+            statusDisplay.innerHTML = `
+                <i class="fas fa-${icon} ${colorClass} mr-2"></i>
+                <span class="font-medium text-gray-700">${text}</span>
+            `;
+        }
+
+        // Update status duration display
+        function updateStatusDuration() {
+            const durationElement = document.getElementById('status-duration');
+            if (durationElement && statusStartTime) {
+                const duration = formatDuration(statusStartTime);
+                durationElement.textContent = duration;
+            }
+        }
+
+        // Global variables for timing
+        let statusStartTime = null;
+        let statusUpdateInterval;
+        let currentBreakId = null;
+
+        // Load status start time from localStorage
+        async function loadStatusStartTime() {
+            try {
+                // Get current status from database
+                const { data: userData, error } = await supabase
+                    .from('requests_users')
+                    .select('status, updated_at')
+                    .eq('assignee', currentUser.assignee)
+                    .single();
+
+                if (error) throw error;
+
+                if (userData) {
+                    currentUser.status = userData.status;
+                    statusStartTime = new Date(userData.updated_at);
+                    
+                    // If user is on a break, get the current break record
+                    if (userData.status === 'coffee-break' || userData.status === 'lunch-break') {
+                        const { data: breakData, error: breakError } = await supabase
+                            .from('employee_breaks')
+                            .select('id, start_time')
+                            .eq('employee_email', currentUser.email)
+                            .is('end_time', null)
+                            .order('start_time', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (!breakError && breakData) {
+                            currentBreakId = breakData.id;
+                            statusStartTime = new Date(breakData.start_time);
+                        }
+                    }
+
+                    updateStatusDisplay(currentUser.status);
+                    updateStatusDuration();
+                }
+            } catch (error) {
+                console.error('Error loading status:', error);
+                // Fallback to current time if there's an error
+                statusStartTime = new Date();
+            }
+        }
+
+        // Modify saveStatusStartTime to save to database
+        async function saveStatusStartTime(status) {
+            try {
+                const now = new Date().toISOString();
+                
+                // Update user status in database
+                const { error } = await supabase
+                    .from('requests_users')
+                    .update({ 
+                        status: status,
+                        updated_at: now
+                    })
+                    .eq('assignee', currentUser.assignee);
+
+                if (error) throw error;
+
+                statusStartTime = new Date(now);
+                currentUser.status = status;
+            } catch (error) {
+                console.error('Error saving status:', error);
+            }
+        }
+
+        // Enhanced status update function
+        async function updateEmployeeStatus(status, forcedByLimit = false) {
+            try {
+                // Store the previous status before updating
+                const previousStatus = currentUser.status;
+
+                // If switching to a break status
+                if (status === 'coffee-break' || status === 'lunch-break') {
+                    // Check if break limit is reached
+                    const limitReached = await isBreakLimitReached(status);
+                    if (limitReached) {
+                        if (!forcedByLimit) {
+                            showNotification(`Daily ${formatStatusText(status)} limit reached. Status set to Ready.`, 'warning');
+                            await updateEmployeeStatus('ready', true);
+                        }
+                        return;
+                    }
+                }
+
+                // If switching from a break status to ready, end the current break
+                if (currentUser.status && (currentUser.status === 'coffee-break' || currentUser.status === 'lunch-break') && status === 'ready') {
+                    await endBreak();
+                }
+
+                // If switching to a break status and limit not reached
+                if ((status === 'coffee-break' || status === 'lunch-break') && !forcedByLimit) {
+                    await startBreak(status);
+                }
+
+                const now = new Date().toISOString();
+
+                // Log the status change in employee_status_history
+                const { error: historyError } = await supabase
+                    .from('employee_status_history')
+                    .insert({
+                        employee_email: currentUser.email,
+                        previous_status: previousStatus || 'ready',
+                        new_status: status,
+                        change_time: now,
+                        created_at: now
+                    });
+
+                if (historyError) {
+                    console.error('Error logging status history:', historyError);
+                }
+
+                // Update user status and timestamp
+                await saveStatusStartTime(status);
+                updateStatusDisplay(status);
+                updateStatusDuration();
+                await updateDashboardStats();
+                await updateBreakProgress();
+
+                if (!forcedByLimit) {
+                    showNotification(`Status updated to ${formatStatusText(status)}`, 'success');
+                }
+
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showNotification('Failed to update status', 'error');
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('Page initialization started');
+                
+                // Show loading overlay
+                toggleLoading(true);
+                console.log('Loading overlay shown');
+
+                // Initialize user first
+                console.log('Initializing user...');
+                const userInitialized = await initializeUser();
+                console.log('User initialization result:', userInitialized);
+                
+                if (!userInitialized) {
+                    console.log('User initialization failed, stopping initialization');
+                    toggleLoading(false);
+                    return;
+                }
+
+                // Initialize badge system
+                initializeBadgeSystem();
+
+                // Reset status timer and set to ready on login
+                await resetStatusOnLogin();
+
+                // Initialize status duration timer
+                statusUpdateInterval = setInterval(updateStatusDuration, 1000);
+
+                // Initialize break progress
+                await updateBreakProgress();
+                setInterval(updateBreakProgress, 60000); // Update every minute
+
+                // Initialize app container
+                const appContainer = document.getElementById('app');
+                if (appContainer) {
+                    appContainer.style.display = 'block';
+                    console.log('App container displayed');
+                }
+                
+                // Load initial data
+                console.log('Loading assigned tickets...');
+                await loadAssignedTickets();
+                console.log('Loading dashboard stats...');
+                await updateDashboardStats();
+                console.log('Initial data loaded');
+
+                // Remove the auto-refresh interval for loadAssignedTickets
+                // Set up refresh interval for stats only
+                setInterval(updateDashboardStats, 5000);
+                console.log('Refresh interval set up');
+
+                // Set up sort order listener
+                const sortOrderSelect = document.getElementById('sort-order');
+                if (sortOrderSelect) {
+                    // Load saved preference
+                    const savedOrder = localStorage.getItem('ticketsSortOrder');
+                    if (savedOrder) {
+                        sortOrderSelect.value = savedOrder;
+                    }
+                    
+                    sortOrderSelect.addEventListener('change', loadAssignedTickets);
+                    console.log('Sort order listener set up');
+                }
+
+                // Set up refresh button
+                const refreshButton = document.getElementById('refresh-btn');
+                if (refreshButton) {
+                    refreshButton.addEventListener('click', loadAssignedTickets);
+                    console.log('Refresh button listener set up');
+                }
+
+                // Hide loading overlay
+                toggleLoading(false);
+                console.log('Page initialization completed');
+
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showNotification('Failed to initialize page', 'error');
+                toggleLoading(false);
+            }
+        });
+
+        // Show/Hide loading overlay
+        function toggleLoading(show = true) {
+            const loadingOverlay = document.getElementById('loading');
+            if (loadingOverlay) {
+                if (show) {
+                    loadingOverlay.style.display = 'flex';
+                } else {
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Remove after delay
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Load assigned tickets
+        async function loadAssignedTickets() {
+            try {
+                console.log('Loading assigned tickets...');
+                // Reset notification badge when manually refreshing
+                resetNotificationCount();
+                lastKnownTicketCount = 0;  // Reset the counter
+                
+                const sortOrderSelect = document.getElementById('sort-order');
+                const sortOrder = sortOrderSelect ? sortOrderSelect.value : 'desc';
+                
+                localStorage.setItem('ticketsSortOrder', sortOrder);
+                
+                const refreshButton = document.getElementById('refresh-btn');
+                if (refreshButton) {
+                    refreshButton.classList.add('btn-loading');
+                    refreshButton.innerHTML = 'Loading...';
+                }
+
+                const ticketsTable = document.getElementById('tickets-table');
+                if (ticketsTable) {
+                    ticketsTable.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 text-center">
+                                <i class="fas fa-circle-notch fa-spin text-blue-500 text-2xl"></i>
+                                <p class="mt-2 text-gray-500">Loading tickets...</p>
+                        </td>
+                    </tr>
+                `;
+                }
+
+                // Get total count first
+                const { count: totalCount, error: countError } = await supabase
+                    .from('tickets')
+                    .select('*', { count: 'exact' })
+                    .eq('assigned_to', currentUser.assignee)
+                    .eq('status', 'in-progress');
+
+                if (countError) throw countError;
+
+                // Calculate pagination
+                const itemsPerPage = 50;
+                const totalPages = Math.ceil(totalCount / itemsPerPage);
+                const currentPage = parseInt(localStorage.getItem('currentPage')) || 1;
+                const offset = (currentPage - 1) * itemsPerPage;
+                
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('ticket_id, created_at, assigned_at, status')
+                    .eq('assigned_to', currentUser.assignee)
+                    .eq('status', 'in-progress')
+                    .order('created_at', { ascending: sortOrder === 'asc' })
+                    .range(offset, offset + itemsPerPage - 1);
+                
+                if (error) throw error;
+                
+                if (ticketsTable) {
+                    if (!tickets || tickets.length === 0) {
+                        ticketsTable.innerHTML = `
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-center">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
+                                        <p class="text-gray-500">No tickets assigned</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        ticketsTable.innerHTML = tickets.map(ticket => `
+                            <tr class="hover:bg-gray-50 transition-all duration-150" data-ticket-id="${ticket.ticket_id}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                        <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    ${formatDate(ticket.created_at)}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    ${ticket.status === 'in-progress' ? 
+                                        '<span class="status-in-progress"><i class="fas fa-spinner"></i> IN PROGRESS</span>'
+                                     : `
+                                        <span class="status-pill status-${ticket.status}">
+                                            <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
+                                            ${formatTicketStatus(ticket.status)}
+                                        </span>
+                                    `}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <button 
+                                        onclick="markTicketDone('${ticket.ticket_id}', '${ticket.assigned_at}'); event.preventDefault();" 
+                                        class="btn-done">
+                                        <i class="fas fa-check-circle"></i>
+                                        Mark as Done
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+
+                // Update pagination controls
+                const paginationControls = document.getElementById('pagination-controls');
+                const paginationInfo = document.getElementById('pagination-info');
+                const prevPageBtn = document.getElementById('prev-page');
+                const nextPageBtn = document.getElementById('next-page');
+
+                if (paginationControls && totalCount > itemsPerPage) {
+                    paginationControls.classList.remove('hidden');
+                    paginationInfo.textContent = `Showing ${offset + 1}-${Math.min(offset + itemsPerPage, totalCount)} of ${totalCount} tickets`;
+                    prevPageBtn.disabled = currentPage === 1;
+                    nextPageBtn.disabled = currentPage === totalPages;
+                } else if (paginationControls) {
+                    paginationControls.classList.add('hidden');
+                }
+                
+                if (refreshButton) {
+                    refreshButton.classList.remove('btn-loading');
+                    refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Refresh';
+                }
+                
+                await updateDashboardStats();
+                
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+                showNotification('Failed to load tickets', 'error');
+            }
+        }
+
+        // Add pagination functions
+        function prevPage() {
+            const currentPage = parseInt(localStorage.getItem('currentPage')) || 1;
+            if (currentPage > 1) {
+                localStorage.setItem('currentPage', currentPage - 1);
+                loadAssignedTickets();
+            }
+        }
+
+        function nextPage() {
+            const currentPage = parseInt(localStorage.getItem('currentPage')) || 1;
+            localStorage.setItem('currentPage', currentPage + 1);
+            loadAssignedTickets();
+        }
+
+        // Format ticket status
+        function formatTicketStatus(status) {
+            return status.split('-')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
+        // Get status icon
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'ready': return 'check-circle';
+                case 'coffee-break': return 'coffee';
+                case 'lunch-break': return 'utensils';
+                case 'closed': return 'check-double';
+                default: return 'circle';
+            }
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        // Handle logout
+        async function handleLogout() {
+            try {
+                // Clear intervals
+                if (statusUpdateInterval) {
+                    clearInterval(statusUpdateInterval);
+                }
+
+                // First update user status to offline
+                const { error: statusError } = await supabase
+                    .from('requests_users')
+                    .update({ 
+                        status: 'offline',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('assignee', currentUser.assignee);
+
+                if (statusError) throw statusError;
+
+                // Clear local storage
+                localStorage.removeItem('statusStartTime');
+                localStorage.removeItem('currentStatus');
+
+                // Then sign out
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Error logging out:', error);
+                showNotification('Failed to logout', 'error');
+            }
+        }
+
+        // Check authentication and initialize user
+        async function initializeUser() {
+            try {
+                console.log('Getting session...');
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('Session error:', sessionError);
+                    throw sessionError;
+                }
+
+                if (!session) {
+                    console.log('No session found, redirecting to login');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+
+                console.log('Session found, getting user data...');
+                // Get user data from requests_users table
+                const { data: userData, error: userError } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('email', session.user.email)
+                    .single();
+
+                if (userError) {
+                    console.error('User data error:', userError);
+                    throw userError;
+                }
+
+                if (!userData || userData.role !== 'back-office') {
+                    console.log('Invalid user role, redirecting to login');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+
+                currentUser = {
+                    email: session.user.email,
+                    assignee: userData.assignee,
+                    role: userData.role,
+                    status: userData.status
+                };
+                
+                // Update the user name in the header
+                await updateUserName();
+                
+                console.log('User initialized:', currentUser);
+                return true;
+            } catch (error) {
+                console.error('Error in initializeUser:', error);
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+
+        // Update dashboard stats
+        async function updateDashboardStats() {
+            try {
+                // Get all back-office employees
+                const { data: employees, error: employeeError } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('role', 'back-office')
+                    .neq('status', 'offline');
+                
+                if (employeeError) throw employeeError;
+                
+                // Get total in-progress tickets count
+                const { count: totalTickets, error: ticketsError } = await supabase
+                    .from('tickets')
+                    .select('*', { count: 'exact' })
+                    .eq('status', 'in-progress');
+                
+                if (ticketsError) throw ticketsError;
+                
+                // Get closed tickets with handling times
+                const { data: closedTickets, error: ahtError } = await supabase
+                    .from('tickets')
+                    .select('assigned_at, avg_handling_time')
+                    .eq('status', 'closed')
+                    .not('avg_handling_time', 'is', null);
+                
+                if (ahtError) throw ahtError;
+                
+                // Calculate AHT
+                let totalHandlingTime = 0;
+                let ticketsWithAHT = 0;
+                
+                if (closedTickets && closedTickets.length > 0) {
+                    closedTickets.forEach(ticket => {
+                        if (ticket.assigned_at && ticket.avg_handling_time) {
+                            const handlingTime = calculateHandlingTime(ticket.assigned_at, ticket.avg_handling_time);
+                            totalHandlingTime += handlingTime;
+                            ticketsWithAHT++;
+                        }
+                    });
+                }
+                
+                const averageAHT = ticketsWithAHT > 0 ? Math.round(totalHandlingTime / ticketsWithAHT) : 0;
+                
+                // Count employees by status
+                let readyEmployees = 0;
+                let coffeeBreakEmployees = 0;
+                let lunchBreakEmployees = 0;
+                
+                if (employees && employees.length > 0) {
+                    employees.forEach(emp => {
+                        if (emp.status === 'ready') readyEmployees++;
+                        else if (emp.status === 'coffee-break') coffeeBreakEmployees++;
+                        else if (emp.status === 'lunch-break') lunchBreakEmployees++;
+                    });
+                }
+                
+                // Update stats with animation
+                animateCounter('total-tickets', totalTickets);
+                animateCounter('ready-employees', readyEmployees);
+                animateCounter('coffee-break-employees', coffeeBreakEmployees);
+                animateCounter('lunch-break-employees', lunchBreakEmployees);
+                animateCounter('avg-handling-time', averageAHT, 'min');
+                
+            } catch (error) {
+                console.error('Error updating dashboard stats:', error);
+                showNotification('Failed to update stats', 'error');
+            }
+        }
+
+        // Animate counter with unit
+        function animateCounter(elementId, targetValue, unit = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const isInitialState = element.textContent === '-';
+            const currentValue = isInitialState ? 0 : parseInt(element.textContent);
+            
+            if (isInitialState || currentValue !== targetValue) {
+                element.classList.add('animate-pulse-once');
+                setTimeout(() => {
+                    element.classList.remove('animate-pulse-once');
+                }, 600);
+            }
+            
+            if (!isInitialState && currentValue === targetValue) return;
+            
+            const diff = targetValue - currentValue;
+            const duration = 800;
+            const steps = 20;
+            const increment = diff / steps;
+            let current = currentValue;
+            let step = 0;
+            
+            const timer = setInterval(() => {
+                step++;
+                current += increment;
+                
+                if (step >= steps) {
+                    clearInterval(timer);
+                    element.textContent = targetValue + (unit ? ` ${unit}` : '');
+                    updateStatColor(element, targetValue);
+                } else {
+                    element.textContent = Math.round(current) + (unit ? ` ${unit}` : '');
+                }
+            }, duration / steps);
+        }
+
+        // Update stat color based on value
+        function updateStatColor(element, value) {
+            element.classList.remove('text-green-500', 'text-yellow-500', 'text-red-500');
+            
+            if (element.id === 'avg-handling-time') {
+                // AHT thresholds (in minutes)
+                if (value <= 5) {
+                    element.classList.add('text-green-500');
+                } else if (value <= 10) {
+                    element.classList.add('text-yellow-500');
+                } else {
+                    element.classList.add('text-red-500');
+                }
+            } else {
+                // Default thresholds
+                if (value > 0) {
+                    element.classList.add('text-green-500');
+                }
+            }
+        }
+
+        // Calculate handling time for a ticket
+        function calculateHandlingTime(startTime, endTime) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            const diffInMinutes = Math.round((end - start) / (1000 * 60));
+            return diffInMinutes;
+        }
+
+        // Mark ticket as done
+        async function markTicketDone(ticketId, assignedAt) {
+            try {
+                const now = new Date();
+                
+                // Update ticket status and handling time
+                const { error: updateError } = await supabase
+                    .from('tickets')
+                    .update({ 
+                        status: 'closed',
+                        avg_handling_time: now.toISOString()
+                    })
+                    .eq('ticket_id', ticketId);
+                
+                if (updateError) throw updateError;
+                
+                // Remove the row with animation
+                const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
+                if (row) {
+                    row.style.transition = 'all 0.5s ease-out';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        row.remove();
+                        // Update the total count in stats
+                        updateDashboardStats();
+                    }, 500);
+                }
+
+                showNotification('Ticket marked as done', 'success');
+                
+            } catch (error) {
+                console.error('Error marking ticket as done:', error);
+                showNotification('Failed to update ticket', 'error');
+            }
+        }
+
+        // Add this to your existing JavaScript, after the initializeUser function
+        async function updateUserName() {
+            if (currentUser && currentUser.assignee) {
+                const userNameElement = document.getElementById('user-name');
+                if (userNameElement) {
+                    userNameElement.textContent = currentUser.assignee;
+                }
+            }
+        }
+
+        // Add event listeners for the status dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusMenu = document.getElementById('status-menu');
+            const statusMenuItems = document.querySelectorAll('.status-menu-item');
+
+            // Toggle menu
+            statusIndicator.addEventListener('click', (e) => {
+                e.stopPropagation();
+                statusMenu.classList.toggle('hidden');
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', () => {
+                statusMenu.classList.add('hidden');
+            });
+
+            // Prevent menu from closing when clicking inside
+            statusMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            // Handle status changes
+            statusMenuItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const status = item.dataset.status;
+                    updateEmployeeStatus(status);
+                    statusMenu.classList.add('hidden');
+                });
+            });
+        });
+
+        // Add this function for copying ticket ID
+        function copyTicketId(ticketId) {
+            navigator.clipboard.writeText(ticketId).then(() => {
+                showNotification('Ticket ID copied to clipboard!', 'success');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showNotification('Failed to copy ticket ID', 'error');
+            });
+        }
+
+        // Add this to your existing JavaScript
+        let lastKnownTicketCount = 0;
+        let newTicketsCount = 0;
+        let badgeCheckInterval;
+
+        // Function to check for new tickets
+        async function checkNewTickets() {
+            try {
+                console.log('Checking for new tickets...');
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('ticket_id')
+                    .eq('assigned_to', currentUser.assignee)
+                    .eq('status', 'in-progress');
+
+                if (error) {
+                    console.error('Error fetching tickets:', error);
+                    throw error;
+                }
+
+                const currentCount = tickets ? tickets.length : 0;
+                console.log('Current ticket count:', currentCount);
+                console.log('Last known count:', lastKnownTicketCount);
+
+                if (lastKnownTicketCount === 0) {
+                    console.log('Initializing last known count');
+                    lastKnownTicketCount = currentCount;
+                } else if (currentCount > lastKnownTicketCount) {
+                    newTicketsCount = currentCount - lastKnownTicketCount;
+                    console.log('New tickets detected:', newTicketsCount);
+                    updateNotificationBadge();
+                    showNotification(`You have ${newTicketsCount} new ticket(s) assigned!`, 'info');
+                }
+                
+                lastKnownTicketCount = currentCount;
+            } catch (error) {
+                console.error('Error checking for new tickets:', error);
+            }
+        }
+
+        // Function to update the notification badge
+        function updateNotificationBadge() {
+            console.log('Updating notification badge, new tickets:', newTicketsCount);
+            const refreshContainer = document.querySelector('.refresh-container');
+            if (!refreshContainer) {
+                console.error('Refresh container not found!');
+                return;
+            }
+
+            let badge = refreshContainer.querySelector('.notification-badge');
+
+            if (newTicketsCount > 0) {
+                if (!badge) {
+                    console.log('Creating new badge');
+                    badge = document.createElement('div');
+                    badge.className = 'notification-badge';
+                    refreshContainer.appendChild(badge);
+                }
+                badge.textContent = newTicketsCount;
+                badge.style.display = 'flex';
+                console.log('Badge updated with count:', newTicketsCount);
+            } else if (badge) {
+                console.log('Hiding badge');
+                badge.style.display = 'none';
+            }
+        }
+
+        // Function to reset notification count
+        function resetNotificationCount() {
+            console.log('Resetting notification count');
+            newTicketsCount = 0;
+            updateNotificationBadge();
+        }
+
+        // Initialize badge system
+        function initializeBadgeSystem() {
+            console.log('Initializing badge system');
+            // Clear any existing interval
+            if (badgeCheckInterval) {
+                clearInterval(badgeCheckInterval);
+            }
+            
+            // Reset counters
+            lastKnownTicketCount = 0;
+            newTicketsCount = 0;
+            
+            // Initial check
+            checkNewTickets();
+            
+            // Set up periodic checking
+            badgeCheckInterval = setInterval(checkNewTickets, 10000); // Check every 10 seconds
+            console.log('Badge system initialized');
+        }
+
+        // Add event listener for logout button
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutButton = document.getElementById('logout');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', handleLogout);
+            }
+        });
+
+        // Add search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('ticket-search');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(async () => {
+                        const searchTerm = this.value.trim();
+                        if (searchTerm) {
+                            // Search across all tickets
+                            const { data: tickets, error } = await supabase
+                                .from('tickets')
+                                .select('ticket_id, created_at, assigned_at, status')
+                                .eq('assigned_to', currentUser.assignee)
+                                .eq('status', 'in-progress')
+                                .ilike('ticket_id', `%${searchTerm}%`)
+                                .order('created_at', { ascending: false });
+
+                            if (error) {
+                                console.error('Search error:', error);
+                                return;
+                            }
+
+                            const ticketsTable = document.getElementById('tickets-table');
+                            if (tickets.length === 0) {
+                                ticketsTable.innerHTML = `
+                                    <tr>
+                                        <td colspan="4" class="px-6 py-4 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <i class="fas fa-search text-gray-400 text-4xl mb-3"></i>
+                                                <p class="text-gray-500">No tickets found matching "${searchTerm}"</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            } else {
+                                ticketsTable.innerHTML = tickets.map(ticket => `
+                                    <tr class="hover:bg-gray-50 transition-all duration-150" data-ticket-id="${ticket.ticket_id}">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                                <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${formatDate(ticket.created_at)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            ${ticket.status === 'in-progress' ? 
+                                                '<span class="status-in-progress"><i class="fas fa-spinner"></i> IN PROGRESS</span>'
+                                             : `
+                                                <span class="status-pill status-${ticket.status}">
+                                                    <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
+                                                    ${formatTicketStatus(ticket.status)}
+                                                </span>
+                                            `}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button 
+                                                onclick="markTicketDone('${ticket.ticket_id}', '${ticket.assigned_at}'); event.preventDefault();" 
+                                                class="btn-done">
+                                                <i class="fas fa-check-circle"></i>
+                                                Mark as Done
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('');
+                            }
+
+                            // Hide pagination during search
+                            const paginationControls = document.getElementById('pagination-controls');
+                            if (paginationControls) {
+                                paginationControls.classList.add('hidden');
+                            }
+                        } else {
+                            // If search is cleared, reload normal view
+                            loadAssignedTickets();
+                        }
+                    }, 300); // Debounce search for better performance
+                });
+            }
+        });
+
+        // Add new function to reset status on login
+        async function resetStatusOnLogin() {
+            try {
+                // Get current status from database
+                const { data: userData, error } = await supabase
+                    .from('requests_users')
+                    .select('status, updated_at')
+                    .eq('assignee', currentUser.assignee)
+                    .single();
+
+                if (error) throw error;
+
+                if (userData) {
+                    currentUser.status = userData.status;
+                    statusStartTime = new Date(userData.updated_at);
+                    
+                    // If user is on a break, get the current break record
+                    if (userData.status === 'coffee-break' || userData.status === 'lunch-break') {
+                        const { data: breakData, error: breakError } = await supabase
+                            .from('employee_breaks')
+                            .select('id, start_time')
+                            .eq('employee_email', currentUser.email)
+                            .is('end_time', null)
+                            .order('start_time', { ascending: false })
+                            .limit(1)
+                            .single();
+
+                        if (!breakError && breakData) {
+                            currentBreakId = breakData.id;
+                            statusStartTime = new Date(breakData.start_time);
+                        }
+                    }
+
+                    updateStatusDisplay(currentUser.status);
+                    updateStatusDuration();
+                }
+            } catch (error) {
+                console.error('Error resetting status:', error);
+                showNotification('Failed to reset status', 'error');
+            }
+        }
+    </script>
+</body>
+</html> 
