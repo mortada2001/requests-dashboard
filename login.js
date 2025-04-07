@@ -58,8 +58,13 @@ async function handleLogin(event) {
                 window.location.href = 'non-voice.html'
                 break
             case 'admin':
-                // Admin users are still redirected to admin.html by default
                 window.location.href = 'admin.html'
+                break
+            case 'back-office':
+                window.location.href = 'tickets.html'
+                break
+            case 'admin-back-office':
+                window.location.href = 'back-office-admin.html'
                 break
             default:
                 throw new Error('Invalid user role')
@@ -98,8 +103,13 @@ async function checkSession() {
                 window.location.href = 'non-voice.html'
                 break
             case 'admin':
-                // Admin users are still redirected to admin.html by default
                 window.location.href = 'admin.html'
+                break
+            case 'back-office':
+                window.location.href = 'tickets.html'
+                break
+            case 'admin-back-office':
+                window.location.href = 'back-office-admin.html'
                 break
         }
     }
