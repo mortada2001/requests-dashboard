@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Back Office Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Modern Dashboard Styles */
+        .dashboard-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .status-ready { background-color: #dcfce7; color: #166534; }
+        .status-coffee-break { background-color: #ffedd5; color: #9a3412; }
+        .status-lunch-break { background-color: #fee2e2; color: #b91c1c; }
+        .status-offline { background-color: #f3f4f6; color: #6b7280; }
+
+        .employee-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .employee-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .status-dropdown-content {
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .status-dropdown.active .status-dropdown-content {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .status-option {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .status-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .break-progress {
+            height: 0.5rem;
+            border-radius: 9999px;
+            background-color: #f3f4f6;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .break-progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .break-progress-fill.coffee {
+            background-color: #f59e0b;
+        }
+
+        .break-progress-fill.lunch {
+            background-color: #ef4444;
+        }
+
+        .view-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .view-switcher button {
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #f3f4f6;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+        }
+
+        .view-switcher button.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .view-switcher button:hover:not(.active) {
+            background-color: #e5e7eb;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-filter {
+            min-width: 140px;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            background-color: white;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        .refresh-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #f3f4f6;
+            color: #374151;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background-color: #e5e7eb;
+        }
+
+        .refresh-btn i {
+            font-size: 0.875rem;
+        }
+
+        .progress-bar {
+            height: 0.5rem;
+            border-radius: 9999px;
+            background-color: #f3f4f6;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .ticket-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .ticket-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .ticket-card.overdue {
+            border-left: 4px solid #ef4444;
+        }
+
+        .ticket-card.approaching {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 9999px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-1px);
+        }
+
+        .nav-link {
+            position: relative;
+            padding: 0.5rem 1rem;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #3b82f6;
+        }
+
+        .nav-link.active {
+            color: #3b82f6;
+            font-weight: 500;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 1rem;
+            right: 1rem;
+            height: 2px;
+            background-color: #3b82f6;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading Overlay -->
+    <div id="loading" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-[9999] w-[350px] pointer-events-auto"></div>
+
+    <!-- Main App Container -->
+    <div id="app" class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-line text-blue-600 text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold text-gray-800">Back Office Admin</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-user text-gray-400"></i>
+                            <span id="user-name" class="text-gray-600 font-medium"></span>
+                        </div>
+                        <button id="logout" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="dashboard-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Active Employees</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="active-employees">0</h3>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">In Progress Tickets</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="in-progress-tickets">0</h3>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-tasks text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Overdue Tickets</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="overdue-tickets">0</h3>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Average Handling Time</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="avg-handling-time">0m</h3>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-clock text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-4 px-4 py-2">
+                        <button class="nav-link active" data-tab="employees">
+                            <i class="fas fa-users mr-2"></i>
+                            Employee Status
+                        </button>
+                        <button class="nav-link" data-tab="tickets">
+                            <i class="fas fa-ticket-alt mr-2"></i>
+                            Ticket Monitoring
+                        </button>
+                        <button class="nav-link" data-tab="analytics">
+                            <i class="fas fa-chart-bar mr-2"></i>
+                            Analytics
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Employees Tab -->
+                <div id="employees-tab" class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800">Employee Status</h2>
+                        <div class="header-controls">
+                            <div class="view-switcher">
+                                <button id="card-view" class="active">
+                                    <i class="fas fa-th-large"></i>
+                                    Cards
+                                </button>
+                                <button id="table-view">
+                                    <i class="fas fa-table"></i>
+                                    Table
+                                </button>
+                            </div>
+                            <select id="employee-status-filter" class="status-filter">
+                                <option value="all">All Statuses</option>
+                                <option value="ready">Ready</option>
+                                <option value="coffee-break">Coffee Break</option>
+                                <option value="lunch-break">Lunch Break</option>
+                                <option value="offline">Offline</option>
+                            </select>
+                            <button id="refresh-employees" class="refresh-btn">
+                                <i class="fas fa-sync-alt"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="employee-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Employee cards will be loaded here -->
+                    </div>
+
+                    <div id="employee-table" class="hidden">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Time in Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employee-table-body">
+                                <!-- Table rows will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tickets Tab -->
+                <div id="tickets-tab" class="p-6 hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800">Ticket Monitoring</h2>
+                        <div class="flex space-x-3">
+                            <select id="ticket-status-filter" class="form-select">
+                                <option value="all">All Statuses</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="approaching">Approaching SLA</option>
+                            </select>
+                            <button id="refresh-tickets" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4" id="tickets-container">
+                        <!-- Tickets will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div id="analytics-tab" class="p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="dashboard-card">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Status Distribution</h3>
+                            <div class="chart-container">
+                                <canvas id="status-distribution-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="dashboard-card">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Ticket Volume</h3>
+                            <div class="chart-container">
+                                <canvas id="ticket-volume-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Employee Details Modal -->
+    <div id="employee-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">Employee Details</h3>
+                <button class="text-gray-400 hover:text-gray-500" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="employee-details-content">
+                <!-- Employee details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://pdcssepqmgzpkayzfqta.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkY3NzZXBxbWd6cGtheXpmcXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MzczMjksImV4cCI6MjA1NjQxMzMyOX0.NqN7b7itdA8Tz0sG4fzSI4Y19P5syYFWnmKwANbH1IY';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let currentUser = null;
+        let statusCharts = {};
+        let volumeChart = null;
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Check session
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error || !session) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Get user data
+                const { data: userData, error: userError } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('email', session.user.email)
+                    .single();
+
+                if (userError || userData.role !== 'admin-back-office') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                currentUser = { ...session.user, ...userData };
+                document.getElementById('user-name').textContent = currentUser.assignee;
+
+                // Add event listeners
+                document.getElementById('logout').addEventListener('click', handleLogout);
+                document.getElementById('refresh-employees').addEventListener('click', loadEmployees);
+                document.getElementById('refresh-tickets').addEventListener('click', loadTickets);
+                document.getElementById('employee-status-filter').addEventListener('change', loadEmployees);
+                document.getElementById('ticket-status-filter').addEventListener('change', loadTickets);
+
+                // Tab switching
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                        
+                        document.querySelectorAll('[id$="-tab"]').forEach(tab => tab.classList.add('hidden'));
+                        document.getElementById(`${link.dataset.tab}-tab`).classList.remove('hidden');
+                        
+                        if (link.dataset.tab === 'analytics') {
+                            initializeCharts();
+                        }
+                    });
+                });
+
+                // Load initial data
+                await Promise.all([
+                    loadEmployees(),
+                    loadTickets(),
+                    loadStatistics()
+                ]);
+
+                // Set up realtime subscriptions
+                setupRealTimeSubscriptions();
+
+                // Hide loading spinner
+                document.getElementById('loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showNotification('Failed to initialize dashboard', 'error');
+            }
+        });
+
+        // Load and display employees
+        async function loadEmployees() {
+            try {
+                const statusFilter = document.getElementById('employee-status-filter').value;
+                const { data: employees, error } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('role', 'back-office')
+                    .order('assignee');
+
+                if (error) throw error;
+
+                const container = document.getElementById('employee-cards');
+                const tableBody = document.getElementById('employee-table-body');
+                container.innerHTML = '';
+                tableBody.innerHTML = '';
+
+                employees.forEach(employee => {
+                    if (statusFilter !== 'all' && employee.status !== statusFilter) return;
+
+                    // Create and append card
+                    const card = createEmployeeCard(employee);
+                    container.appendChild(card);
+
+                    // Create and append table row
+                    const row = createEmployeeTableRow(employee);
+                    tableBody.appendChild(row);
+
+                    // Update break timers
+                    updateBreakTimers(employee);
+                });
+
+                // Start status timers
+                await startStatusTimers();
+            } catch (error) {
+                console.error('Error loading employees:', error);
+                showNotification('Failed to load employees', 'error');
+            }
+        }
+
+        // Load and display tickets
+        async function loadTickets() {
+            try {
+                const statusFilter = document.getElementById('ticket-status-filter').value;
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const container = document.getElementById('tickets-container');
+                container.innerHTML = '';
+
+                tickets.forEach(ticket => {
+                    if (statusFilter !== 'all') {
+                        if (statusFilter === 'overdue' && !isOverdue(ticket)) return;
+                        if (statusFilter === 'approaching' && !isApproachingSLA(ticket)) return;
+                        if (statusFilter === 'in-progress' && ticket.status !== 'in-progress') return;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = `ticket-card ${isOverdue(ticket) ? 'overdue' : isApproachingSLA(ticket) ? 'approaching' : ''}`;
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Ticket #${ticket.ticket_id}</h4>
+                                <p class="text-sm text-gray-500">Assigned to: ${ticket.assigned_to}</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm text-gray-500">Created: ${formatDate(ticket.created_at)}</span>
+                                <span class="text-sm ${isOverdue(ticket) ? 'text-red-500' : isApproachingSLA(ticket) ? 'text-yellow-500' : 'text-gray-500'}">
+                                    ${formatDuration(ticket.created_at)}
+                                </span>
+                                <button onclick="sendReminder('${ticket.ticket_id}', '${ticket.assigned_to}')" 
+                                    class="btn btn-secondary">
+                                    <i class="fas fa-bell mr-2"></i>
+                                    Remind
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+                showNotification('Failed to load tickets', 'error');
+            }
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                // Get active employees count
+                const { data: activeEmployees } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('role', 'back-office')
+                    .neq('status', 'offline');
+
+                document.getElementById('active-employees').textContent = activeEmployees.length;
+
+                // Get in-progress tickets count
+                const { data: inProgressTickets } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .eq('status', 'in-progress');
+
+                document.getElementById('in-progress-tickets').textContent = inProgressTickets.length;
+
+                // Get overdue tickets count
+                const { data: allTickets } = await supabase
+                    .from('tickets')
+                    .select('*');
+
+                const overdueTickets = allTickets.filter(ticket => isOverdue(ticket));
+                document.getElementById('overdue-tickets').textContent = overdueTickets.length;
+
+                // Calculate average handling time
+                const { data: completedTickets } = await supabase
+                    .from('tickets')
+                    .select('created_at, avg_handling_time')
+                    .eq('status', 'closed');
+
+                let totalTime = 0;
+                let count = 0;
+
+                completedTickets.forEach(ticket => {
+                    if (ticket.avg_handling_time) {
+                        const handlingTime = calculateHandlingTime(ticket.created_at, ticket.avg_handling_time);
+                        totalTime += handlingTime;
+                        count++;
+                    }
+                });
+
+                const avgTime = count > 0 ? Math.round(totalTime / count) : 0;
+                document.getElementById('avg-handling-time').textContent = `${avgTime}m`;
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                showNotification('Failed to load statistics', 'error');
+            }
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Status Distribution Chart
+            const statusCtx = document.getElementById('status-distribution-chart').getContext('2d');
+            statusCharts = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ready', 'Coffee Break', 'Lunch Break', 'Offline'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            '#dcfce7',
+                            '#ffedd5',
+                            '#fee2e2',
+                            '#f3f4f6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Ticket Volume Chart
+            const volumeCtx = document.getElementById('ticket-volume-chart').getContext('2d');
+            volumeChart = new Chart(volumeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Tickets',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            updateCharts();
+        }
+
+        // Update charts with latest data
+        async function updateCharts() {
+            try {
+                // Update status distribution
+                const { data: employees } = await supabase
+                    .from('requests_users')
+                    .select('status')
+                    .eq('role', 'back-office');
+
+                const statusCounts = {
+                    ready: 0,
+                    'coffee-break': 0,
+                    'lunch-break': 0,
+                    offline: 0
+                };
+
+                employees.forEach(emp => {
+                    statusCounts[emp.status]++;
+                });
+
+                statusCharts.data.datasets[0].data = Object.values(statusCounts);
+                statusCharts.update();
+
+                // Update ticket volume
+                const { data: tickets } = await supabase
+                    .from('tickets')
+                    .select('created_at')
+                    .order('created_at');
+
+                const hourlyData = {};
+                tickets.forEach(ticket => {
+                    const hour = new Date(ticket.created_at).getHours();
+                    hourlyData[hour] = (hourlyData[hour] || 0) + 1;
+                });
+
+                const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+                const data = labels.map((_, i) => hourlyData[i] || 0);
+
+                volumeChart.data.labels = labels;
+                volumeChart.data.datasets[0].data = data;
+                volumeChart.update();
+            } catch (error) {
+                console.error('Error updating charts:', error);
+            }
+        }
+
+        // Start status timers for all employees
+        async function startStatusTimers() {
+            const { data: employees } = await supabase
+                .from('requests_users')
+                .select('email, status, updated_at')
+                .eq('role', 'back-office');
+
+            employees.forEach(employee => {
+                const durationElement = document.getElementById(`status-duration-${employee.email}`);
+                if (durationElement) {
+                    const startTime = new Date(employee.updated_at);
+                    updateStatusTimer(durationElement, startTime);
+                    setInterval(() => updateStatusTimer(durationElement, startTime), 1000);
+                }
+            });
+        }
+
+        // Update status timer display
+        function updateStatusTimer(element, startTime) {
+            const now = new Date();
+            const diff = Math.floor((now - startTime) / 1000);
+            const hours = Math.floor(diff / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
+            element.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // View employee details
+        async function viewEmployeeDetails(email) {
+            try {
+                const { data: employee } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+
+                const { data: breaks } = await supabase
+                    .from('employee_breaks')
+                    .select('*')
+                    .eq('employee_email', email)
+                    .order('start_time', { ascending: false });
+
+                const modal = document.getElementById('employee-modal');
+                const content = document.getElementById('employee-details-content');
+                
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Employee Information</h4>
+                            <p class="text-sm text-gray-500">${employee.assignee}</p>
+                            <p class="text-sm text-gray-500">${employee.email}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Current Status</h4>
+                            <p class="text-sm text-gray-500">${formatStatus(employee.status)}</p>
+                            <p class="text-sm text-gray-500">Since: ${formatDate(employee.updated_at)}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Break History</h4>
+                            <div class="space-y-2">
+                                ${breaks.map(breakRecord => `
+                                    <div class="text-sm text-gray-500">
+                                        ${formatDate(breakRecord.start_time)} - 
+                                        ${breakRecord.end_time ? formatDate(breakRecord.end_time) : 'Ongoing'}
+                                        (${breakRecord.break_type})
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading employee details:', error);
+                showNotification('Failed to load employee details', 'error');
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('employee-modal').classList.add('hidden');
+        }
+
+        // Reset employee breaks
+        async function resetEmployeeBreaks(email) {
+            if (!confirm('Are you sure you want to reset this employee\'s breaks?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('employee_breaks')
+                    .delete()
+                    .eq('employee_email', email);
+
+                if (error) throw error;
+
+                showNotification('Employee breaks reset successfully', 'success');
+                loadEmployees();
+            } catch (error) {
+                console.error('Error resetting employee breaks:', error);
+                showNotification('Failed to reset employee breaks', 'error');
+            }
+        }
+
+        // Send reminder for overdue ticket
+        async function sendReminder(ticketId, assignedTo) {
+            try {
+                const { error } = await supabase
+                    .from('tickets')
+                    .update({ last_reminder: new Date().toISOString() })
+                    .eq('ticket_id', ticketId);
+
+                if (error) throw error;
+
+                showNotification(`Reminder sent for ticket ${ticketId}`, 'success');
+            } catch (error) {
+                console.error('Error sending reminder:', error);
+                showNotification('Failed to send reminder', 'error');
+            }
+        }
+
+        // Helper functions
+        function formatStatus(status) {
+            return status.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'ready': return 'check-circle';
+                case 'coffee-break': return 'coffee';
+                case 'lunch-break': return 'utensils';
+                case 'offline': return 'power-off';
+                default: return 'question-circle';
+            }
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString();
+        }
+
+        function formatDuration(dateString) {
+            const now = new Date();
+            const created = new Date(dateString);
+            const diff = Math.floor((now - created) / 1000 / 60); // in minutes
+            return `${diff}m`;
+        }
+
+        function isOverdue(ticket) {
+            const now = new Date();
+            const created = new Date(ticket.created_at);
+            const diff = Math.floor((now - created) / 1000 / 60); // in minutes
+            return diff > 15;
+        }
+
+        function isApproachingSLA(ticket) {
+            const now = new Date();
+            const created = new Date(ticket.created_at);
+            const diff = Math.floor((now - created) / 1000 / 60); // in minutes
+            return diff > 10 && diff <= 15;
+        }
+
+        function calculateHandlingTime(startTime, endTime) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            return Math.floor((end - start) / 1000 / 60); // in minutes
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-title">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    ${type.charAt(0).toUpperCase() + type.slice(1)}
+                </div>
+                <div class="notification-message">${message}</div>
+            `;
+            
+            document.getElementById('notification-container').appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Set up realtime subscriptions
+        function setupRealTimeSubscriptions() {
+            // Subscribe to employee status changes
+            supabase
+                .channel('employee-status')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requests_users' }, payload => {
+                    if (payload.new.role === 'back-office') {
+                        loadEmployees();
+                        updateCharts();
+                    }
+                })
+                .subscribe();
+
+            // Subscribe to ticket changes
+            supabase
+                .channel('tickets')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
+                    loadTickets();
+                    loadStatistics();
+                    updateCharts();
+                })
+                .subscribe();
+        }
+
+        // Handle logout
+        async function handleLogout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Error signing out:', error);
+                showNotification('Failed to sign out', 'error');
+            }
+        }
+
+        // Add these new functions to the script section
+        function toggleStatusDropdown(element) {
+            const dropdown = element.closest('.status-dropdown');
+            document.querySelectorAll('.status-dropdown').forEach(d => {
+                if (d !== dropdown) d.classList.remove('active');
+            });
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.status-dropdown')) {
+                document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('active'));
+            }
+        });
+
+        // View switcher functionality
+        document.getElementById('card-view').addEventListener('click', () => {
+            document.getElementById('card-view').classList.add('active');
+            document.getElementById('table-view').classList.remove('active');
+            document.getElementById('employee-cards').classList.remove('hidden');
+            document.getElementById('employee-table').classList.add('hidden');
+        });
+
+        document.getElementById('table-view').addEventListener('click', () => {
+            document.getElementById('table-view').classList.add('active');
+            document.getElementById('card-view').classList.remove('active');
+            document.getElementById('employee-table').classList.remove('hidden');
+            document.getElementById('employee-cards').classList.add('hidden');
+        });
+
+        // Update break timers
+        function updateBreakTimers(employee) {
+            const coffeeBreakTime = document.getElementById(`coffee-break-time-${employee.email}`);
+            const lunchBreakTime = document.getElementById(`lunch-break-time-${employee.email}`);
+            const coffeeBreakProgress = document.getElementById(`coffee-break-progress-${employee.email}`);
+            const lunchBreakProgress = document.getElementById(`lunch-break-progress-${employee.email}`);
+
+            if (employee.status === 'coffee-break') {
+                const startTime = new Date(employee.updated_at);
+                const now = new Date();
+                const diff = Math.floor((now - startTime) / 1000);
+                const remaining = Math.max(0, 15 * 60 - diff); // 15 minutes in seconds
+                const progress = (remaining / (15 * 60)) * 100;
+                
+                coffeeBreakTime.textContent = formatTime(remaining);
+                coffeeBreakProgress.style.width = `${progress}%`;
+            } else {
+                coffeeBreakTime.textContent = '00:00:00';
+                coffeeBreakProgress.style.width = '0%';
+            }
+
+            if (employee.status === 'lunch-break') {
+                const startTime = new Date(employee.updated_at);
+                const now = new Date();
+                const diff = Math.floor((now - startTime) / 1000);
+                const remaining = Math.max(0, 30 * 60 - diff); // 30 minutes in seconds
+                const progress = (remaining / (30 * 60)) * 100;
+                
+                lunchBreakTime.textContent = formatTime(remaining);
+                lunchBreakProgress.style.width = `${progress}%`;
+            } else {
+                lunchBreakTime.textContent = '00:00:00';
+                lunchBreakProgress.style.width = '0%';
+            }
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Add this function to create table rows
+        function createEmployeeTableRow(employee) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${employee.assignee}</td>
+                <td>${employee.email}</td>
+                <td>
+                    <div class="status-dropdown">
+                        <span class="status-indicator status-${employee.status} cursor-pointer" onclick="toggleStatusDropdown(this)">
+                            <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                            ${formatStatus(employee.status)}
+                        </span>
+                        <div class="status-dropdown-content">
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'ready')">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                Ready
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
+                                <i class="fas fa-coffee text-amber-500"></i>
+                                Coffee Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
+                                <i class="fas fa-utensils text-red-500"></i>
+                                Lunch Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'offline')">
+                                <i class="fas fa-power-off text-gray-500"></i>
+                                Offline
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td id="status-duration-${employee.email}">00:00:00</td>
+                <td>
+                    <button onclick="viewEmployeeDetails('${employee.email}')" class="btn btn-secondary">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                    <button onclick="resetEmployeeBreaks('${employee.email}')" class="btn btn-danger">
+                        <i class="fas fa-redo-alt"></i>
+                    </button>
+                </td>
+            `;
+            return row;
+        }
+
+        // Add the missing createEmployeeCard function
+        function createEmployeeCard(employee) {
+            const card = document.createElement('div');
+            card.className = 'employee-card';
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">${employee.assignee}</h3>
+                        <p class="text-sm text-gray-500">${employee.email}</p>
+                    </div>
+                    <div class="status-dropdown">
+                        <span class="status-indicator status-${employee.status} cursor-pointer" onclick="toggleStatusDropdown(this)">
+                            <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                            ${formatStatus(employee.status)}
+                        </span>
+                        <div class="status-dropdown-content">
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'ready')">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                Ready
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
+                                <i class="fas fa-coffee text-amber-500"></i>
+                                Coffee Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
+                                <i class="fas fa-utensils text-red-500"></i>
+                                Lunch Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'offline')">
+                                <i class="fas fa-power-off text-gray-500"></i>
+                                Offline
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Status Duration</span>
+                            <span id="status-duration-${employee.email}">00:00:00</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill bg-blue-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between text-sm text-gray-500 mb-1">
+                                <span>Coffee Break</span>
+                                <span id="coffee-break-time-${employee.email}">00:00:00</span>
+                            </div>
+                            <div class="break-progress">
+                                <div class="break-progress-fill coffee" id="coffee-break-progress-${employee.email}" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm text-gray-500 mb-1">
+                                <span>Lunch Break</span>
+                                <span id="lunch-break-time-${employee.email}">00:00:00</span>
+                            </div>
+                            <div class="break-progress">
+                                <div class="break-progress-fill lunch" id="lunch-break-progress-${employee.email}" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500">Tickets Today</p>
+                            <p class="text-xl font-semibold" id="tickets-count-${employee.email}">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500">Avg. Handling Time</p>
+                            <p class="text-xl font-semibold" id="avg-time-${employee.email}">0m</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button onclick="viewEmployeeDetails('${employee.email}')" class="btn btn-secondary">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Details
+                    </button>
+                    <button onclick="resetEmployeeBreaks('${employee.email}')" class="btn btn-danger">
+                        <i class="fas fa-redo-alt mr-2"></i>
+                        Reset Breaks
+                    </button>
+                </div>
+            `;
+            return card;
+        }
+    </script>
+</body>
+</html> 
