@@ -141,45 +141,103 @@
                     </div>
                     <h3 class="text-gray-500 text-sm font-medium">Closed Tickets</h3>
                     <p id="closed-count" class="text-2xl font-bold text-gray-900">0</p>
+                    <p class="text-sm text-gray-500 mt-1">In selected period</p>
                 </div>
                 <div class="stats-card">
                     <div class="stats-icon bg-yellow-100 text-yellow-600">
                         <i class="fas fa-clock text-xl"></i>
                     </div>
-                    <h3 class="text-gray-500 text-sm font-medium">Open Tickets</h3>
-                    <p id="open-count" class="text-2xl font-bold text-gray-900">0</p>
+                    <h3 class="text-gray-500 text-sm font-medium">Average Response Time</h3>
+                    <p id="avg-response-time" class="text-2xl font-bold text-gray-900">0 min</p>
+                    <p class="text-sm text-gray-500 mt-1">First response time</p>
                 </div>
                 <div class="stats-card">
                     <div class="stats-icon bg-purple-100 text-purple-600">
                         <i class="fas fa-hourglass-half text-xl"></i>
                     </div>
-                    <h3 class="text-gray-500 text-sm font-medium">Avg. Processing Time</h3>
-                    <p id="avg-time" class="text-2xl font-bold text-gray-900">0 min</p>
+                    <h3 class="text-gray-500 text-sm font-medium">SLA Compliance</h3>
+                    <p id="sla-compliance" class="text-2xl font-bold text-gray-900">0%</p>
+                    <p class="text-sm text-gray-500 mt-1">Within target time</p>
                 </div>
                 <div class="stats-card">
                     <div class="stats-icon bg-green-100 text-green-600">
                         <i class="fas fa-chart-line text-xl"></i>
                     </div>
-                    <h3 class="text-gray-500 text-sm font-medium">Tickets per Hour</h3>
-                    <p id="tickets-per-hour" class="text-2xl font-bold text-gray-900">0</p>
+                    <h3 class="text-gray-500 text-sm font-medium">Resolution Rate</h3>
+                    <p id="resolution-rate" class="text-2xl font-bold text-gray-900">0/hr</p>
+                    <p class="text-sm text-gray-500 mt-1">Tickets per hour</p>
+                </div>
+            </div>
+
+            <!-- Additional Statistics Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="stats-card">
+                    <div class="stats-icon bg-red-100 text-red-600">
+                        <i class="fas fa-exclamation-circle text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">SLA Breaches</h3>
+                    <p id="sla-breaches" class="text-2xl font-bold text-gray-900">0</p>
+                    <p class="text-sm text-gray-500 mt-1">In selected period</p>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-icon bg-indigo-100 text-indigo-600">
+                        <i class="fas fa-bolt text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">Peak Performance</h3>
+                    <p id="peak-hour" class="text-2xl font-bold text-gray-900">--:--</p>
+                    <p class="text-sm text-gray-500 mt-1">Most productive hour</p>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-icon bg-orange-100 text-orange-600">
+                        <i class="fas fa-stopwatch text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">Average Handle Time</h3>
+                    <p id="avg-handle-time" class="text-2xl font-bold text-gray-900">0 min</p>
+                    <p class="text-sm text-gray-500 mt-1">Time to resolution</p>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-icon bg-teal-100 text-teal-600">
+                        <i class="fas fa-tasks text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-500 text-sm font-medium">Completion Rate</h3>
+                    <p id="completion-rate" class="text-2xl font-bold text-gray-900">0%</p>
+                    <p class="text-sm text-gray-500 mt-1">Tasks completed</p>
                 </div>
             </div>
 
             <!-- Charts Section -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Status Distribution Chart -->
+                <!-- Daily Performance Chart -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Ticket Status Distribution</h2>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Daily Performance</h2>
                     <div class="h-64">
-                        <canvas id="status-chart"></canvas>
+                        <canvas id="daily-performance-chart"></canvas>
                     </div>
                 </div>
 
-                <!-- Tickets Over Time Chart -->
+                <!-- SLA Compliance Chart -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Tickets Over Time</h2>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">SLA Compliance Over Time</h2>
                     <div class="h-64">
-                        <canvas id="time-chart"></canvas>
+                        <canvas id="sla-compliance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Hourly Resolution Pattern -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Hourly Resolution Pattern</h2>
+                    <div class="h-64">
+                        <canvas id="hourly-pattern-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Response Time Distribution -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Response Time Distribution</h2>
+                    <div class="h-64">
+                        <canvas id="response-time-chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -218,324 +276,418 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkY3NzZXBxbWd6cGtheXpmcXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MzczMjksImV4cCI6MjA1NjQxMzMyOX0.NqN7b7itdA8Tz0sG4fzSI4Y19P5syYFWnmKwANbH1IY'
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
 
-        let currentUser = null
-        let statusChart = null
-        let timeChart = null
-        let closedTickets = []
+        let currentUser = null;
+        let charts = {
+            dailyPerformance: null,
+            slaCompliance: null,
+            hourlyPattern: null,
+            responseTime: null
+        };
         
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check session
-            const { data: { session }, error } = await supabase.auth.getSession()
-            if (error || !session) {
-                window.location.href = 'login.html'
-                return
+            try {
+                // Show loading overlay
+                document.getElementById('loading').classList.remove('hidden');
+
+                // Check session
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError || !session) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Get user data
+                const { data: userData, error: userError } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('email', session.user.email)
+                    .single();
+
+                if (userError || userData.role !== 'back-office') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Initialize currentUser
+                currentUser = { ...session.user, ...userData };
+                document.getElementById('user-name').textContent = currentUser.assignee;
+
+                // Add event listeners
+                document.getElementById('date-range').addEventListener('change', handleDateRangeChange);
+                document.getElementById('apply-filter').addEventListener('click', loadStatistics);
+                document.getElementById('export-csv').addEventListener('click', exportToCSV);
+                document.getElementById('logout').addEventListener('click', handleLogout);
+                document.getElementById('date-from').addEventListener('change', () => {
+                    if (document.getElementById('date-range').value === 'custom') {
+                        loadStatistics();
+                    }
+                });
+                document.getElementById('date-to').addEventListener('change', () => {
+                    if (document.getElementById('date-range').value === 'custom') {
+                        loadStatistics();
+                    }
+                });
+
+                // Set initial date range
+                setDefaultDateRange('week');
+                
+                // Load initial statistics
+                await loadStatistics();
+                
+                // Hide loading spinner
+                document.getElementById('loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showNotification('Failed to initialize page', 'error');
+                document.getElementById('loading').classList.add('hidden');
             }
-
-            // Get user data
-            const { data: userData, error: userError } = await supabase
-                .from('requests_users')
-                .select('*')
-                .eq('email', session.user.email)
-                .single()
-
-            if (userError || userData.role !== 'back-office') {
-                window.location.href = 'login.html'
-                return
-            }
-
-            currentUser = { ...session.user, ...userData }
-            document.getElementById('user-name').textContent = currentUser.assignee
-
-            // Add event listeners
-            document.getElementById('date-range').addEventListener('change', handleDateRangeChange)
-            document.getElementById('apply-filter').addEventListener('click', loadStatistics)
-            document.getElementById('export-csv').addEventListener('click', exportToCSV)
-            document.getElementById('logout').addEventListener('click', handleLogout)
-
-            // Set initial date range
-            setDefaultDateRange('week')
-            
-            // Load initial statistics
-            await loadStatistics()
-            
-            // Hide loading spinner
-            document.getElementById('loading').classList.add('hidden')
-        })
-
-        // Set default date range based on selection
-        function setDefaultDateRange(range) {
-            const today = new Date()
-            let fromDate = new Date()
-            
-            switch(range) {
-                case 'today':
-                    // Keep fromDate as today
-                    break
-                case 'yesterday':
-                    fromDate.setDate(today.getDate() - 1)
-                    break
-                case 'week':
-                    fromDate.setDate(today.getDate() - 7)
-                    break
-                case 'month':
-                    fromDate.setMonth(today.getMonth() - 1)
-                    break
-                default:
-                    fromDate.setDate(today.getDate() - 7)
-            }
-            
-            document.getElementById('date-from').valueAsDate = fromDate
-            document.getElementById('date-to').valueAsDate = today
-        }
+        });
 
         // Handle date range dropdown change
         function handleDateRangeChange() {
-            const range = document.getElementById('date-range').value
-            const customRange = document.getElementById('custom-range')
+            const range = document.getElementById('date-range').value;
+            const customRange = document.getElementById('custom-range');
             
             if (range === 'custom') {
-                customRange.classList.remove('hidden')
+                customRange.classList.remove('hidden');
             } else {
-                customRange.classList.add('hidden')
-                setDefaultDateRange(range)
+                customRange.classList.add('hidden');
+                setDefaultDateRange(range);
+                loadStatistics(); // Automatically load when preset range is selected
             }
+        }
+
+        // Set default date range based on selection
+        function setDefaultDateRange(range) {
+            const today = new Date();
+            let fromDate = new Date();
+            
+            switch(range) {
+                case 'today':
+                    fromDate = new Date(today.setHours(0, 0, 0, 0));
+                    break;
+                case 'yesterday':
+                    fromDate = new Date(today);
+                    fromDate.setDate(today.getDate() - 1);
+                    fromDate.setHours(0, 0, 0, 0);
+                    today.setHours(23, 59, 59, 999);
+                    break;
+                case 'week':
+                    fromDate.setDate(today.getDate() - 7);
+                    break;
+                case 'month':
+                    fromDate.setMonth(today.getMonth() - 1);
+                    break;
+                default:
+                    fromDate.setDate(today.getDate() - 7);
+            }
+            
+            document.getElementById('date-from').valueAsDate = fromDate;
+            document.getElementById('date-to').valueAsDate = today;
         }
 
         // Load statistics based on date range
         async function loadStatistics() {
             try {
-                const fromDate = document.getElementById('date-from').valueAsDate
-                const toDate = document.getElementById('date-to').valueAsDate
+                if (!currentUser || !currentUser.assignee) {
+                    console.error('User not initialized');
+                    showNotification('Please wait for user initialization', 'error');
+                    return;
+                }
+
+                const fromDate = document.getElementById('date-from').valueAsDate;
+                const toDate = document.getElementById('date-to').valueAsDate;
                 
+                if (!fromDate || !toDate) {
+                    console.error('Invalid date range');
+                    showNotification('Please select valid dates', 'error');
+                    return;
+                }
+
                 // Add one day to toDate to include the entire day
-                const adjustedToDate = new Date(toDate)
-                adjustedToDate.setDate(adjustedToDate.getDate() + 1)
+                const adjustedToDate = new Date(toDate);
+                adjustedToDate.setDate(adjustedToDate.getDate() + 1);
                 
                 // Format dates for Supabase query
-                const fromDateStr = fromDate.toISOString()
-                const toDateStr = adjustedToDate.toISOString()
-                
-                // Get closed tickets
-                const { data: ticketsData, error: ticketsError } = await supabase
+                const fromDateStr = fromDate.toISOString();
+                const toDateStr = adjustedToDate.toISOString();
+
+                // Get tickets within date range (including closed tickets)
+                const { data: tickets, error: ticketsError } = await supabase
                     .from('tickets')
                     .select('*')
                     .eq('assigned_to', currentUser.assignee)
-                    .in('status', ['closed'])
                     .gte('created_at', fromDateStr)
-                    .lt('created_at', toDateStr)
-                    .order('created_at', { ascending: false })
-                
-                if (ticketsError) throw ticketsError
-                
-                // Store the closed tickets
-                closedTickets = ticketsData
-                
-                // Update summary statistics
-                updateSummaryStats(closedTickets)
-                
-                // Update charts
-                updateStatusChart(closedTickets)
-                updateTimeChart(closedTickets)
-                
-                // Update history table
-                updateHistoryTable(closedTickets)
+                    .lt('created_at', toDateStr);
+
+                if (ticketsError) throw ticketsError;
+
+                // Calculate statistics
+                const closedTickets = tickets.filter(t => t.status === 'closed').length;
+                const totalTickets = tickets.length;
+
+                // Calculate average response time (in minutes)
+                const responseTimes = tickets
+                    .filter(t => t.assigned_at && t.created_at)
+                    .map(t => {
+                        const assigned = new Date(t.assigned_at);
+                        const created = new Date(t.created_at);
+                        return Math.round((assigned - created) / (1000 * 60));
+                    });
+                const avgResponseTime = responseTimes.length > 0 
+                    ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+                    : 0;
+
+                // Calculate SLA compliance
+                const slaTarget = 15; // 15 minutes
+                const slaCompliant = responseTimes.filter(time => time <= slaTarget).length;
+                const slaCompliance = totalTickets > 0 
+                    ? Math.round((slaCompliant / totalTickets) * 100)
+                    : 100;
+
+                // Calculate resolution rate (tickets per hour)
+                const hoursDiff = (toDate - fromDate) / (1000 * 60 * 60);
+                const resolutionRate = hoursDiff > 0 
+                    ? Math.round((closedTickets / hoursDiff) * 10) / 10
+                    : 0;
+
+                // Calculate SLA breaches
+                const slaBreaches = responseTimes.filter(time => time > slaTarget).length;
+
+                // Calculate peak hour
+                const hourCounts = {};
+                tickets.forEach(ticket => {
+                    const hour = new Date(ticket.created_at).getHours();
+                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                });
+                const peakHour = Object.entries(hourCounts)
+                    .sort(([,a], [,b]) => b - a)[0]?.[0] || 0;
+
+                // Calculate average handle time
+                const handleTimes = tickets
+                    .filter(t => t.status === 'closed' && t.assigned_at && t.avg_handling_time)
+                    .map(t => {
+                        const start = new Date(t.assigned_at);
+                        const end = new Date(t.avg_handling_time);
+                        return Math.round((end - start) / (1000 * 60));
+                    });
+                const avgHandleTime = handleTimes.length > 0
+                    ? Math.round(handleTimes.reduce((a, b) => a + b, 0) / handleTimes.length)
+                    : 0;
+
+                // Calculate completion rate
+                const completionRate = totalTickets > 0
+                    ? Math.round((closedTickets / totalTickets) * 100)
+                    : 0;
+
+                // Update DOM elements with calculated statistics
+                document.getElementById('closed-count').textContent = closedTickets;
+                document.getElementById('avg-response-time').textContent = `${avgResponseTime} min`;
+                document.getElementById('sla-compliance').textContent = `${slaCompliance}%`;
+                document.getElementById('resolution-rate').textContent = `${resolutionRate}/hr`;
+                document.getElementById('sla-breaches').textContent = slaBreaches;
+                document.getElementById('peak-hour').textContent = `${peakHour.toString().padStart(2, '0')}:00`;
+                document.getElementById('avg-handle-time').textContent = `${avgHandleTime} min`;
+                document.getElementById('completion-rate').textContent = `${completionRate}%`;
+
+                // Prepare data for charts
+                const dailyStats = getDailyStats(tickets, fromDate, toDate);
+                const slaStats = getSLAStats(tickets, fromDate, toDate);
+                const hourlyStats = getHourlyStats(tickets);
+                const responseDistribution = getResponseTimeDistribution(responseTimes);
+
+                // Initialize charts
+                initializeCharts(dailyStats, slaStats, hourlyStats, responseDistribution);
+
+                // Update history table with all tickets (the function will filter closed ones)
+                updateHistoryTable(tickets);
+
             } catch (error) {
-                console.error('Error loading statistics:', error)
-                showNotification('Failed to load statistics', 'error')
+                console.error('Error loading statistics:', error);
+                showNotification('Failed to load statistics', 'error');
             }
         }
-        
-        // Update summary statistics
-        function updateSummaryStats(data) {
-            const closedCount = data.length
-            const openCount = data.filter(t => t.status === 'open').length
+
+        // Helper function to get daily statistics
+        function getDailyStats(tickets, fromDate, toDate) {
+            const dates = [];
+            const resolved = [];
             
-            document.getElementById('closed-count').textContent = closedCount
-            document.getElementById('open-count').textContent = openCount
-            
-            // Calculate average processing time (in minutes)
-            if (data.length > 0) {
-                const totalMinutes = data.reduce((total, ticket) => {
-                    if (ticket.created_at && ticket.updated_at) {
-                        const createdDate = new Date(ticket.created_at)
-                        const closedDate = new Date(ticket.updated_at)
-                        const diffMs = closedDate - createdDate
-                        return total + (diffMs / (1000 * 60)) // Convert ms to minutes
-                    }
-                    return total
-                }, 0)
+            let currentDate = new Date(fromDate);
+            while (currentDate <= toDate) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                dates.push(dateStr);
                 
-                const avgMinutes = Math.round(totalMinutes / data.length)
-                document.getElementById('avg-time').textContent = `${avgMinutes} min`
+                const dayResolved = tickets.filter(t => 
+                    t.status === 'closed' && 
+                    new Date(t.created_at).toISOString().split('T')[0] === dateStr
+                ).length;
                 
-                // Calculate tickets per hour
-                const hours = (new Date(data[0].created_at) - new Date(data[data.length - 1].created_at)) / (1000 * 60 * 60)
-                const ticketsPerHour = hours > 0 ? Math.round(data.length / hours) : data.length
-                document.getElementById('tickets-per-hour').textContent = ticketsPerHour
-            } else {
-                document.getElementById('avg-time').textContent = '0 min'
-                document.getElementById('tickets-per-hour').textContent = '0'
+                resolved.push(dayResolved);
+                
+                currentDate.setDate(currentDate.getDate() + 1);
             }
+            
+            return { dates, resolved };
         }
-        
-        // Update status distribution chart
-        function updateStatusChart(data) {
-            const statusCounts = {
-                'closed': data.filter(t => t.status === 'closed').length,
-                'open': data.filter(t => t.status === 'open').length
+
+        // Helper function to get SLA compliance stats
+        function getSLAStats(tickets, fromDate, toDate) {
+            const dates = [];
+            const compliance = [];
+            
+            let currentDate = new Date(fromDate);
+            while (currentDate <= toDate) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                dates.push(dateStr);
+                
+                const dayTickets = tickets.filter(t => 
+                    new Date(t.created_at).toISOString().split('T')[0] === dateStr
+                );
+                
+                const dayCompliance = dayTickets.length > 0
+                    ? (dayTickets.filter(t => {
+                        const responseTime = t.assigned_at
+                            ? Math.round((new Date(t.assigned_at) - new Date(t.created_at)) / (1000 * 60))
+                            : 0;
+                        return responseTime <= 15;
+                    }).length / dayTickets.length) * 100
+                    : 100;
+                
+                compliance.push(Math.round(dayCompliance));
+                
+                currentDate.setDate(currentDate.getDate() + 1);
             }
             
-            const canvas = document.getElementById('status-chart')
+            return { dates, compliance };
+        }
+
+        // Helper function to get hourly statistics
+        function getHourlyStats(tickets) {
+            const hours = Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+            const resolved = Array(24).fill(0);
             
-            if (statusChart) {
-                statusChart.destroy()
-            }
+            tickets.forEach(ticket => {
+                if (ticket.status === 'closed') {
+                    const hour = new Date(ticket.created_at).getHours();
+                    resolved[hour]++;
+                }
+            });
             
-            statusChart = new Chart(canvas, {
-                type: 'doughnut',
+            return { hours, resolved };
+        }
+
+        // Helper function to get response time distribution
+        function getResponseTimeDistribution(responseTimes) {
+            const under15 = responseTimes.filter(t => t < 15).length;
+            const under30 = responseTimes.filter(t => t >= 15 && t < 30).length;
+            const under60 = responseTimes.filter(t => t >= 30 && t < 60).length;
+            const over60 = responseTimes.filter(t => t >= 60).length;
+            
+            return [under15, under30, under60, over60];
+        }
+
+        // Initialize all charts
+        function initializeCharts(dailyStats, slaStats, hourlyStats, responseDistribution) {
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => {
+                if (chart) {
+                    chart.destroy();
+                }
+            });
+
+            // Daily Performance Chart
+            charts.dailyPerformance = new Chart(document.getElementById('daily-performance-chart').getContext('2d'), {
+                type: 'line',
                 data: {
-                    labels: ['Closed', 'Open'],
+                    labels: dailyStats.dates,
                     datasets: [{
-                        data: [
-                            statusCounts.closed,
-                            statusCounts.open
-                        ],
-                        backgroundColor: [
-                            '#10b981', // Green for closed
-                            '#6366f1'  // Indigo for open
-                        ],
-                        borderWidth: 1
+                        label: 'Tickets Resolved',
+                        data: dailyStats.resolved,
+                        borderColor: '#4F46E5',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // SLA Compliance Chart
+            charts.slaCompliance = new Chart(document.getElementById('sla-compliance-chart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: slaStats.dates,
+                    datasets: [{
+                        label: 'SLA Compliance %',
+                        data: slaStats.compliance,
+                        borderColor: '#7C3AED',
+                        tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
                         }
                     }
                 }
-            })
-        }
-        
-        // Update tickets over time chart
-        function updateTimeChart(data) {
-            // Group data by date
-            const dateGroups = {}
-            
-            data.forEach(item => {
-                const date = new Date(item.created_at).toLocaleDateString()
-                
-                if (!dateGroups[date]) {
-                    dateGroups[date] = {
-                        'closed': 0,
-                        'open': 0
-                    }
-                }
-                
-                dateGroups[date][item.status]++
-            })
-            
-            // Convert to arrays for Chart.js
-            const dates = Object.keys(dateGroups).sort((a, b) => new Date(a) - new Date(b))
-            const closedData = dates.map(date => dateGroups[date].closed)
-            const openData = dates.map(date => dateGroups[date].open)
-            
-            const canvas = document.getElementById('time-chart')
-            
-            if (timeChart) {
-                timeChart.destroy()
-            }
-            
-            timeChart = new Chart(canvas, {
-                type: 'line',
+            });
+
+            // Hourly Resolution Pattern
+            charts.hourlyPattern = new Chart(document.getElementById('hourly-pattern-chart').getContext('2d'), {
+                type: 'bar',
                 data: {
-                    labels: dates,
-                    datasets: [
-                        {
-                            label: 'Closed',
-                            data: closedData,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            tension: 0.1
-                        },
-                        {
-                            label: 'Open',
-                            data: openData,
-                            borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                            tension: 0.1
-                        }
-                    ]
+                    labels: hourlyStats.hours,
+                    datasets: [{
+                        label: 'Tickets Resolved',
+                        data: hourlyStats.resolved,
+                        backgroundColor: '#10B981'
+                    }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Date'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Tickets'
-                            },
-                            ticks: {
-                                precision: 0
-                            }
-                        }
-                    }
+                    maintainAspectRatio: false
                 }
-            })
+            });
+
+            // Response Time Distribution
+            charts.responseTime = new Chart(document.getElementById('response-time-chart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['< 15 min', '15-30 min', '30-60 min', '> 60 min'],
+                    datasets: [{
+                        data: responseDistribution,
+                        backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
         }
-        
-        // Update history table
-        function updateHistoryTable(data) {
-            const historyTable = document.getElementById('history-table')
-            
-            if (!data || data.length === 0) {
-                historyTable.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center py-8 text-gray-500">
-                            <i class="fas fa-clipboard-list text-4xl mb-3"></i>
-                            <p>No tickets in selected date range</p>
-                        </td>
-                    </tr>
-                `
-                return
+
+        // Helper function to format time duration
+        function formatDuration(minutes) {
+            if (minutes < 60) {
+                return `${minutes} min`;
             }
-            
-            let tableHtml = '';
-            
-            data.forEach(item => {
-                // Calculate processing time
-                let processingTime = 'N/A'
-                if (item.created_at && item.updated_at) {
-                    const createdDate = new Date(item.created_at)
-                    const closedDate = new Date(item.updated_at)
-                    const diffMs = closedDate - createdDate
-                    const diffMins = Math.round(diffMs / (1000 * 60))
-                    processingTime = `${diffMins} min`
-                }
-                
-                tableHtml += `
-                    <tr class="animate-fade-in">
-                        <td class="font-medium">${item.ticket_id}</td>
-                        <td>${new Date(item.created_at).toLocaleString()}</td>
-                        <td>${new Date(item.updated_at).toLocaleString()}</td>
-                        <td>${processingTime}</td>
-                    </tr>
-                `
-            })
-            
-            historyTable.innerHTML = tableHtml
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            return `${hours}h ${remainingMinutes}m`;
         }
-        
+
+        // Helper function to format time
+        function formatTime(hour) {
+            return `${hour.toString().padStart(2, '0')}:00`;
+        }
+
         // Export data to CSV
         function exportToCSV() {
             if (!closedTickets || closedTickets.length === 0) {
@@ -604,6 +756,83 @@
             setTimeout(() => {
                 notification.remove()
             }, 3000)
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        // Update history table
+        function updateHistoryTable(tickets) {
+            const historyTable = document.getElementById('history-table');
+            if (!historyTable) return;
+
+            // Filter only closed tickets
+            const closedTickets = tickets.filter(t => t.status === 'closed');
+
+            if (!closedTickets || closedTickets.length === 0) {
+                historyTable.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-8">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-clipboard-list text-gray-400 text-4xl mb-3"></i>
+                                <p class="text-gray-500">No closed tickets in selected date range</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Store closed tickets for export functionality
+            window.closedTickets = closedTickets;
+
+            historyTable.innerHTML = closedTickets.map(ticket => {
+                const processingTime = ticket.assigned_at && ticket.avg_handling_time
+                    ? Math.round((new Date(ticket.avg_handling_time) - new Date(ticket.assigned_at)) / (1000 * 60))
+                    : 'N/A';
+
+                return `
+                    <tr class="hover:bg-gray-50 transition-all duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${formatDate(ticket.created_at)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${formatDate(ticket.avg_handling_time)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${typeof processingTime === 'number' ? `${processingTime} min` : processingTime}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Add this helper function if not already present
+        function copyTicketId(ticketId) {
+            navigator.clipboard.writeText(ticketId).then(() => {
+                showNotification('Ticket ID copied to clipboard', 'success');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showNotification('Failed to copy ticket ID', 'error');
+            });
         }
     </script>
 </body>
