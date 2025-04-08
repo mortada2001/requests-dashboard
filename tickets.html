@@ -833,6 +833,75 @@
             position: relative;
             display: inline-block;
         }
+
+        /* Add SLA timer styles */
+        .sla-timer {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 85px;
+            justify-content: center;
+        }
+
+        .sla-timer.safe {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .sla-timer.warning {
+            background-color: #fef3c7;
+            color: #854d0e;
+            animation: pulse 2s infinite;
+        }
+
+        .sla-timer.danger {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            animation: pulse 1s infinite;
+        }
+
+        .sla-timer.breached {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Add sound notification styles */
+        .sound-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        .sound-notification i {
+            font-size: 1.2rem;
+        }
+
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -1024,6 +1093,25 @@
                         <i class="fas fa-ticket-alt text-green-500 mr-2"></i>
                         New Tickets
                     </h2>
+                    <div class="flex items-center space-x-3">
+                        <div class="sort-selector flex items-center space-x-2">
+                            <i class="fas fa-sort-amount-down text-gray-500 text-sm"></i>
+                            <select id="new-sort-order" class="form-select text-sm">
+                                <option value="desc">Newest First</option>
+                                <option value="asc">Oldest First</option>
+                            </select>
+                        </div>
+                        <div class="search-container flex items-center space-x-2">
+                            <input type="text" id="new-ticket-search" placeholder="Search ticket ID..." 
+                                class="form-input text-sm rounded-lg border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                style="width: 200px;">
+                        </div>
+                        <div class="refresh-container relative">
+                            <button id="refresh-new-btn" class="btn btn-primary">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="table-container overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">
@@ -1033,6 +1121,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket ID</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SLA</th>
                             </tr>
                         </thead>
                         <tbody id="new-tickets-table" class="bg-white divide-y divide-gray-200">
@@ -1077,6 +1166,7 @@
                             <button id="refresh-btn" class="btn btn-primary">
                                 <i class="fas fa-sync-alt mr-2"></i>Refresh
                             </button>
+
                         </div>
                     </div>
                 </div>
@@ -1088,6 +1178,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket ID</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SLA</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -1099,7 +1190,14 @@
             </div>
         </main>
 
-        
+        <!-- Add sound notification element -->
+        <div id="sound-notification" class="sound-notification hidden">
+            <i class="fas fa-bell"></i>
+            <span>SLA Breached!</span>
+        </div>
+
+        <!-- Add audio element for notification sound -->
+        <audio id="sla-alert" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
@@ -1746,7 +1844,9 @@
                         `;
                     } else {
                         ticketsTable.innerHTML = tickets.map(ticket => `
-                            <tr class="hover:bg-gray-50 transition-all duration-150">
+                            <tr class="hover:bg-gray-50 transition-all duration-150" 
+                                data-ticket-id="${ticket.ticket_id}"
+                                data-assigned-at="${ticket.assigned_at}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center space-x-2">
                                         <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
@@ -1762,6 +1862,11 @@
                                     <span class="status-in-progress">
                                         <i class="fas fa-spinner"></i>
                                         IN PROGRESS
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="sla-timer ${getSlaTimerClass(calculateTimeRemaining(ticket.assigned_at).minutes)}">
+                                        ${formatTimeRemaining(calculateTimeRemaining(ticket.assigned_at))}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -2074,12 +2179,15 @@
                 
                 if (updateError) throw updateError;
                 
-                // Remove the row with animation
+                // Find and animate the row
                 const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
                 if (row) {
+                    // Add animation classes
                     row.style.transition = 'all 0.5s ease-out';
                     row.style.opacity = '0';
                     row.style.transform = 'translateX(100%)';
+                    
+                    // Remove row after animation
                     setTimeout(() => {
                         row.remove();
                         // Update the total count in stats
@@ -2160,7 +2268,7 @@
                     .from('tickets')
                     .select('ticket_id')
                     .eq('assigned_to', currentUser.assignee)
-                    .eq('status', 'in-progress');
+                    .eq('status', 'new'); // Changed from 'in-progress' to 'new'
 
                 if (error) {
                     console.error('Error fetching tickets:', error);
@@ -2168,8 +2276,8 @@
                 }
 
                 const currentCount = tickets ? tickets.length : 0;
-                console.log('Current ticket count:', currentCount);
-                console.log('Last known count:', lastKnownTicketCount);
+                console.log('Current new ticket count:', currentCount);
+                console.log('Last known new ticket count:', lastKnownTicketCount);
 
                 if (lastKnownTicketCount === 0) {
                     console.log('Initializing last known count');
@@ -2287,7 +2395,9 @@
                                 `;
                             } else {
                                 ticketsTable.innerHTML = tickets.map(ticket => `
-                                    <tr class="hover:bg-gray-50 transition-all duration-150" data-ticket-id="${ticket.ticket_id}">
+                                    <tr class="hover:bg-gray-50 transition-all duration-150" 
+                                        data-ticket-id="${ticket.ticket_id}"
+                                        data-assigned-at="${ticket.assigned_at}">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center space-x-2">
                                                 <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
@@ -2308,6 +2418,11 @@
                                                     ${formatTicketStatus(ticket.status)}
                                                 </span>
                                             `}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="sla-timer ${getSlaTimerClass(calculateTimeRemaining(ticket.assigned_at).minutes)}">
+                                                ${formatTimeRemaining(calculateTimeRemaining(ticket.assigned_at))}
+                                            </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             <button 
@@ -2386,37 +2501,30 @@
                     return;
                 }
 
-                // Get total count of new tickets assigned to current user
-                const { count: totalCount, error: countError } = await supabase
-                    .from('tickets')
-                    .select('*', { count: 'exact' })
-                    .eq('status', 'new')
-                    .eq('assigned_to', currentUser.assignee);
+                resetNotificationCount();
+                lastKnownTicketCount = 0;
 
-                if (countError) throw countError;
-
-                // Calculate pagination
-                const itemsPerPage = 20;
-                const totalPages = Math.ceil(totalCount / itemsPerPage);
-                const currentPage = parseInt(localStorage.getItem('newTicketsCurrentPage')) || 1;
-                const offset = (currentPage - 1) * itemsPerPage;
-
-                // Get new tickets for current page
+                const sortOrder = localStorage.getItem('newTicketsSortOrder') || 'desc';
+                
                 const { data: tickets, error } = await supabase
                     .from('tickets')
                     .select('ticket_id, created_at, status')
                     .eq('status', 'new')
                     .eq('assigned_to', currentUser.assignee)
-                    .order('created_at', { ascending: false })
-                    .range(offset, offset + itemsPerPage - 1);
+                    .order('created_at', { ascending: sortOrder === 'asc' });
 
                 if (error) throw error;
 
                 const newTicketsTable = document.getElementById('new-tickets-table');
+                if (!newTicketsTable) {
+                    console.error('New tickets table element not found');
+                    return;
+                }
+
                 if (!tickets || tickets.length === 0) {
                     newTicketsTable.innerHTML = `
                         <tr>
-                            <td colspan="3" class="px-6 py-4 text-center">
+                            <td colspan="4" class="px-6 py-4 text-center">
                                 <div class="flex flex-col items-center">
                                     <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
                                     <p class="text-gray-500">No new tickets available</p>
@@ -2425,27 +2533,39 @@
                         </tr>
                     `;
                 } else {
-                    newTicketsTable.innerHTML = tickets.map(ticket => `
-                        <tr class="hover:bg-gray-50 transition-all duration-150">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center space-x-2">
-                                    <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
-                                    <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                ${formatDate(ticket.created_at)}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="status-pill status-${ticket.status}">
-                                    <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
-                                    ${formatTicketStatus(ticket.status)}
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('');
+                    newTicketsTable.innerHTML = tickets.map(ticket => {
+                        const timeForSLA = ticket.created_at;
+                        const time = calculateTimeRemaining(timeForSLA);
+                        
+                        return `
+                            <tr class="hover:bg-gray-50 transition-all duration-150" 
+                                data-ticket-id="${ticket.ticket_id}"
+                                data-assigned-at="${timeForSLA}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                        <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    ${formatDate(ticket.created_at)}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="status-pill status-${ticket.status}">
+                                        <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
+                                        ${formatTicketStatus(ticket.status)}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="sla-timer ${getSlaTimerClass(time.minutes)}">
+                                        ${formatTimeRemaining(time)}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
                 }
 
                 // Update pagination controls
@@ -2453,9 +2573,14 @@
                 const nextNewPageBtn = document.getElementById('next-new-page');
                 const paginationInfo = document.getElementById('new-pagination-info');
 
-                prevNewPageBtn.disabled = currentPage === 1;
-                nextNewPageBtn.disabled = currentPage === totalPages;
-                paginationInfo.textContent = `Showing ${offset + 1}-${Math.min(offset + itemsPerPage, totalCount)} of ${totalCount} tickets`;
+                if (prevNewPageBtn && nextNewPageBtn && paginationInfo) {
+                    const currentPage = parseInt(localStorage.getItem('newTicketsCurrentPage')) || 1;
+                    const totalPages = Math.ceil(tickets.length / 20); // 20 items per page
+
+                    prevNewPageBtn.disabled = currentPage === 1;
+                    nextNewPageBtn.disabled = currentPage === totalPages;
+                    paginationInfo.textContent = `Showing ${tickets.length} ticket(s)`;
+                }
 
             } catch (error) {
                 console.error('Error loading new tickets:', error);
@@ -2571,7 +2696,394 @@
                 showNotification('Failed to load tickets', 'error');
             }
         }
+        // Add search functionality for new tickets
+        document.addEventListener('DOMContentLoaded', function() {
+            const newSearchInput = document.getElementById('new-ticket-search');
+            if (newSearchInput) {
+                let searchTimeout;
+                newSearchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(async () => {
+                        const searchTerm = this.value.trim();
+                        if (searchTerm) {
+                            const { data: tickets, error } = await supabase
+                                .from('tickets')
+                                .select('ticket_id, created_at, status')
+                                .eq('status', 'new')
+                                .eq('assigned_to', currentUser.assignee)
+                                .ilike('ticket_id', `%${searchTerm}%`)
+                                .order('created_at', { ascending: false });
+
+                            if (error) {
+                                console.error('Search error:', error);
+                                return;
+                            }
+
+                            const newTicketsTable = document.getElementById('new-tickets-table');
+                            if (tickets.length === 0) {
+                                newTicketsTable.innerHTML = `
+                                    <tr>
+                                        <td colspan="4" class="px-6 py-4 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <i class="fas fa-search text-gray-400 text-4xl mb-3"></i>
+                                                <p class="text-gray-500">No tickets found matching "${searchTerm}"</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            } else {
+                                newTicketsTable.innerHTML = tickets.map(ticket => `
+                                    <tr class="hover:bg-gray-50 transition-all duration-150">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                                <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            ${formatDate(ticket.created_at)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="status-pill status-${ticket.status}">
+                                                <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
+                                                ${formatTicketStatus(ticket.status)}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="sla-timer ${getSlaTimerClass(calculateTimeRemaining(ticket.assigned_at).minutes)}">
+                                                ${formatTimeRemaining(calculateTimeRemaining(ticket.assigned_at))}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button 
+                                                onclick="markTicketDone('${ticket.ticket_id}', '${ticket.assigned_at}'); event.preventDefault();" 
+                                                class="btn-done">
+                                                <i class="fas fa-check-circle"></i>
+                                                Mark as Done
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('');
+                            }
+                        } else {
+                            loadNewTickets();
+                        }
+                    }, 300);
+                });
+            }
+
+            // Add sort order listener for new tickets
+            const newSortOrderSelect = document.getElementById('new-sort-order');
+            if (newSortOrderSelect) {
+                const savedOrder = localStorage.getItem('newTicketsSortOrder');
+                if (savedOrder) {
+                    newSortOrderSelect.value = savedOrder;
+                }
+                
+                newSortOrderSelect.addEventListener('change', () => {
+                    localStorage.setItem('newTicketsSortOrder', newSortOrderSelect.value);
+                    loadNewTickets();
+                });
+            }
+
+            // Add refresh button listener for new tickets
+            const refreshNewButton = document.getElementById('refresh-new-btn');
+            if (refreshNewButton) {
+                refreshNewButton.addEventListener('click', () => {
+                    loadNewTickets();
+                });
+            }
+        });
+
+        // Add SLA timer functions
+        function calculateTimeRemaining(assignedAt) {
+            if (!assignedAt) {
+                return { minutes: 0, seconds: 0 };
+            }
+            const now = new Date();
+            const assignedTime = new Date(assignedAt);
+            const diffInSeconds = Math.floor((now - assignedTime) / 1000);
+            const minutes = Math.floor(diffInSeconds / 60);
+            const seconds = diffInSeconds % 60;
+            return { minutes, seconds };
+        }
+
+        function formatTimeRemaining(time) {
+            return `${time.minutes.toString().padStart(2, '0')}:${time.seconds.toString().padStart(2, '0')}`;
+        }
+
+        function getSlaTimerClass(minutes) {
+            if (minutes >= 15) return 'breached';
+            if (minutes >= 12) return 'danger';
+            if (minutes >= 9) return 'warning';
+            return 'safe';
+        }
+
+        function updateSlaTimers() {
+            const rows = document.querySelectorAll('tr[data-ticket-id]');
+            rows.forEach(row => {
+                const assignedAt = row.getAttribute('data-assigned-at');
+                if (!assignedAt) return;
+
+                const time = calculateTimeRemaining(assignedAt);
+                const timerCell = row.querySelector('.sla-timer');
+                if (timerCell) {
+                    timerCell.textContent = formatTimeRemaining(time);
+                    timerCell.className = `sla-timer ${getSlaTimerClass(time.minutes)}`;
+                    
+                    // Show notification only when exactly hitting 15 minutes
+                    if (time.minutes === 15 && time.seconds === 0) {
+                        const ticketId = row.getAttribute('data-ticket-id');
+                        showSlaBreachNotification(ticketId);
+                    }
+                }
+            });
+        }
+
+        function showSlaBreachNotification(ticketId) {
+            const notification = document.getElementById('sound-notification');
+            const audio = document.getElementById('sla-alert');
+            
+            notification.querySelector('span').textContent = `SLA Breached for ticket ${ticketId}!`;
+            notification.classList.remove('hidden');
+            
+            audio.currentTime = 0;
+            audio.play().catch(e => console.error('Error playing sound:', e));
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Add SLA timer update interval
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... existing event listeners ...
+
+            // Update SLA timers every second
+            setInterval(updateSlaTimers, 1000);
+        });
+
+        // Update timer functions to handle new tickets
+        function calculateTimeRemaining(assignedAt) {
+            if (!assignedAt) {
+                return { minutes: 0, seconds: 0 };
+            }
+            const now = new Date();
+            const assignedTime = new Date(assignedAt);
+            const diffInSeconds = Math.floor((now - assignedTime) / 1000);
+            const minutes = Math.floor(diffInSeconds / 60);
+            const seconds = diffInSeconds % 60;
+            return { minutes, seconds };
+        }
+
+        // Modify the loadNewTickets function
+        async function loadNewTickets() {
+            try {
+                if (!currentUser || !currentUser.assignee) {
+                    console.error('User not initialized');
+                    showNotification('Please wait for user initialization', 'error');
+                    return;
+                }
+
+                resetNotificationCount();
+                lastKnownTicketCount = 0;
+
+                const sortOrder = localStorage.getItem('newTicketsSortOrder') || 'desc';
+                
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('ticket_id, created_at, status')
+                    .eq('status', 'new')
+                    .eq('assigned_to', currentUser.assignee)
+                    .order('created_at', { ascending: sortOrder === 'asc' });
+
+                if (error) throw error;
+
+                const newTicketsTable = document.getElementById('new-tickets-table');
+                if (!newTicketsTable) {
+                    console.error('New tickets table element not found');
+                    return;
+                }
+
+                if (!tickets || tickets.length === 0) {
+                    newTicketsTable.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 text-center">
+                                <div class="flex flex-col items-center">
+                                    <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
+                                    <p class="text-gray-500">No new tickets available</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    newTicketsTable.innerHTML = tickets.map(ticket => {
+                        const timeForSLA = ticket.created_at;
+                        const time = calculateTimeRemaining(timeForSLA);
+                        
+                        return `
+                            <tr class="hover:bg-gray-50 transition-all duration-150" 
+                                data-ticket-id="${ticket.ticket_id}"
+                                data-assigned-at="${timeForSLA}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                        <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    ${formatDate(ticket.created_at)}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="status-pill status-${ticket.status}">
+                                        <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
+                                        ${formatTicketStatus(ticket.status)}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="sla-timer ${getSlaTimerClass(time.minutes)}">
+                                        ${formatTimeRemaining(time)}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Update pagination controls
+                const prevNewPageBtn = document.getElementById('prev-new-page');
+                const nextNewPageBtn = document.getElementById('next-new-page');
+                const paginationInfo = document.getElementById('new-pagination-info');
+
+                if (prevNewPageBtn && nextNewPageBtn && paginationInfo) {
+                    const currentPage = parseInt(localStorage.getItem('newTicketsCurrentPage')) || 1;
+                    const totalPages = Math.ceil(tickets.length / 20); // 20 items per page
+
+                    prevNewPageBtn.disabled = currentPage === 1;
+                    nextNewPageBtn.disabled = currentPage === totalPages;
+                    paginationInfo.textContent = `Showing ${tickets.length} ticket(s)`;
+                }
+
+            } catch (error) {
+                console.error('Error loading new tickets:', error);
+                showNotification('Failed to load new tickets', 'error');
+            }
+        }
+
+        // Update the calculateTimeRemaining function
+        function calculateTimeRemaining(assignedAt) {
+            if (!assignedAt) {
+                return { minutes: 0, seconds: 0 };
+            }
+            const now = new Date();
+            const assignedTime = new Date(assignedAt);
+            const diffInSeconds = Math.floor((now - assignedTime) / 1000);
+            const minutes = Math.floor(diffInSeconds / 60);
+            const seconds = diffInSeconds % 60;
+            return { minutes, seconds };
+        }
+
+        // ... rest of existing code ...
+
+        // Modify the search event listener for new tickets
+        document.addEventListener('DOMContentLoaded', function() {
+            const newSearchInput = document.getElementById('new-ticket-search');
+            if (newSearchInput) {
+                let searchTimeout;
+                newSearchInput.addEventListener('input', async function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            const searchTerm = this.value.trim();
+                            const newTicketsTable = document.getElementById('new-tickets-table');
+                            
+                            if (!newTicketsTable) {
+                                console.error('New tickets table not found');
+                                return;
+                            }
+
+                            if (searchTerm) {
+                                const { data: tickets, error } = await supabase
+                                    .from('tickets')
+                                    .select('ticket_id, created_at, status')
+                                    .eq('status', 'new')
+                                    .eq('assigned_to', currentUser.assignee)
+                                    .ilike('ticket_id', `%${searchTerm}%`)
+                                    .order('created_at', { ascending: false });
+
+                                if (error) throw error;
+
+                                if (!tickets || tickets.length === 0) {
+                                    newTicketsTable.innerHTML = `
+                                        <tr>
+                                            <td colspan="4" class="px-6 py-4 text-center">
+                                                <div class="flex flex-col items-center">
+                                                    <i class="fas fa-search text-gray-400 text-4xl mb-3"></i>
+                                                    <p class="text-gray-500">No tickets found matching "${searchTerm}"</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                } else {
+                                    newTicketsTable.innerHTML = tickets.map(ticket => {
+                                        const timeForSLA = ticket.created_at;
+                                        const time = calculateTimeRemaining(timeForSLA);
+                                        
+                                        return `
+                                            <tr class="hover:bg-gray-50 transition-all duration-150" 
+                                                data-ticket-id="${ticket.ticket_id}"
+                                                data-assigned-at="${timeForSLA}">
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center space-x-2">
+                                                        <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                                        <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    ${formatDate(ticket.created_at)}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="status-pill status-${ticket.status}">
+                                                        <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
+                                                        ${formatTicketStatus(ticket.status)}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="sla-timer ${getSlaTimerClass(time.minutes)}">
+                                                        ${formatTimeRemaining(time)}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('');
+                                }
+
+                                // Update pagination info for search results
+                                const paginationInfo = document.getElementById('new-pagination-info');
+                                if (paginationInfo) {
+                                    paginationInfo.textContent = `Showing ${tickets.length} ticket(s)`;
+                                }
+                            } else {
+                                // If search is cleared, reload normal view
+                                loadNewTickets();
+                            }
+                        } catch (error) {
+                            console.error('Error searching tickets:', error);
+                            showNotification('Failed to search tickets', 'error');
+                        }
+                    }, 300);
+                });
+            }
+        });
+
+        // ... rest of existing code ...
     </script>
 </body>
 </html> 
-</html> 
+
