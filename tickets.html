@@ -1017,12 +1017,48 @@
                 </div>
             </div>
 
-            <!-- Assigned Requests -->
+            <!-- New Tickets Table -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-ticket-alt text-green-500 mr-2"></i>
+                        New Tickets
+                    </h2>
+                </div>
+                
+                <div class="table-container overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="new-tickets-table" class="bg-white divide-y divide-gray-200">
+                            <!-- New tickets will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- New Tickets Pagination -->
+                <div class="flex justify-between items-center mt-4">
+                    <button id="prev-new-page" class="btn btn-secondary btn-sm" disabled>
+                        <i class="fas fa-chevron-left mr-1"></i> Previous
+                    </button>
+                    <span id="new-pagination-info" class="text-sm text-gray-600"></span>
+                    <button id="next-new-page" class="btn btn-secondary btn-sm" disabled>
+                        Next <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- In Progress Tickets Table -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-semibold text-gray-800 flex items-center">
                         <i class="fas fa-ticket-alt text-blue-500 mr-2"></i>
-                        Back Office Tickets
+                        In Progress Tickets
                     </h2>
                     <div class="flex items-center space-x-3">
                         <div class="sort-selector flex items-center space-x-2">
@@ -1045,20 +1081,6 @@
                     </div>
                 </div>
                 
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 text-sm">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-info-circle text-blue-500"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-blue-700">
-                                <strong>Note:</strong> This table shows only <strong>in-progress</strong> tickets assigned to you. 
-                                Completed tickets can be found in your <a href="mystats.html" class="text-blue-600 underline">Statistics page</a>.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
                 <div class="table-container overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
@@ -1070,26 +1092,9 @@
                             </tr>
                         </thead>
                         <tbody id="tickets-table" class="bg-white divide-y divide-gray-200">
-                            <!-- Tickets will be loaded here -->
+                            <!-- In progress tickets will be loaded here -->
                         </tbody>
                     </table>
-                </div>
-                
-                <!-- Pagination Controls -->
-                <div id="pagination-controls" class="flex justify-between items-center mt-6 hidden">
-                    <div id="pagination-info" class="text-sm text-gray-500">
-                        Showing 1-50 of 100 tickets
-                    </div>
-                    <div class="flex space-x-2">
-                        <button id="prev-page" onclick="prevPage()" class="btn btn-secondary btn-sm" disabled>
-                            <i class="fas fa-chevron-left mr-1"></i>
-                            Previous
-                        </button>
-                        <button id="next-page" onclick="nextPage()" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-chevron-right mr-1"></i>
-                            Next
-                        </button>
-                    </div>
                 </div>
             </div>
         </main>
@@ -1582,12 +1587,22 @@
                     console.log('App container displayed');
                 }
                 
-                // Load initial data
-                console.log('Loading assigned tickets...');
-                await loadAssignedTickets();
-                console.log('Loading dashboard stats...');
-                await updateDashboardStats();
-                console.log('Initial data loaded');
+                // Wait a moment to ensure user is fully initialized
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Load initial data only after user is fully initialized
+                if (currentUser && currentUser.assignee) {
+                    console.log('Loading tickets data...');
+                    await Promise.all([
+                        loadNewTickets(),
+                        loadAssignedTickets(),
+                        updateDashboardStats()
+                    ]);
+                    console.log('Initial data loaded');
+                } else {
+                    console.error('User still not initialized after waiting');
+                    showNotification('Failed to initialize user data', 'error');
+                }
 
                 // Remove the auto-refresh interval for loadAssignedTickets
                 // Set up refresh interval for stats only
@@ -1603,14 +1618,23 @@
                         sortOrderSelect.value = savedOrder;
                     }
                     
-                    sortOrderSelect.addEventListener('change', loadAssignedTickets);
+                    sortOrderSelect.addEventListener('change', () => {
+                        if (currentUser && currentUser.assignee) {
+                            loadAssignedTickets();
+                        }
+                    });
                     console.log('Sort order listener set up');
                 }
 
                 // Set up refresh button
                 const refreshButton = document.getElementById('refresh-btn');
                 if (refreshButton) {
-                    refreshButton.addEventListener('click', loadAssignedTickets);
+                    refreshButton.addEventListener('click', () => {
+                        if (currentUser && currentUser.assignee) {
+                            loadNewTickets();
+                            loadAssignedTickets();
+                        }
+                    });
                     console.log('Refresh button listener set up');
                 }
 
@@ -1666,9 +1690,15 @@
         async function loadAssignedTickets() {
             try {
                 console.log('Loading assigned tickets...');
-                // Reset notification badge when manually refreshing
+                
+                if (!currentUser || !currentUser.assignee) {
+                    console.error('User not initialized');
+                    showNotification('Please wait for user initialization', 'error');
+                    return;
+                }
+                
                 resetNotificationCount();
-                lastKnownTicketCount = 0;  // Reset the counter
+                lastKnownTicketCount = 0;
                 
                 const sortOrderSelect = document.getElementById('sort-order');
                 const sortOrder = sortOrderSelect ? sortOrderSelect.value : 'desc';
@@ -1693,31 +1723,15 @@
                 `;
                 }
 
-                // Get total count first
-                const { count: totalCount, error: countError } = await supabase
-                    .from('tickets')
-                    .select('*', { count: 'exact' })
-                    .eq('assigned_to', currentUser.assignee)
-                    .eq('status', 'in-progress');
-
-                if (countError) throw countError;
-
-                // Calculate pagination
-                const itemsPerPage = 50;
-                const totalPages = Math.ceil(totalCount / itemsPerPage);
-                const currentPage = parseInt(localStorage.getItem('currentPage')) || 1;
-                const offset = (currentPage - 1) * itemsPerPage;
-                
                 const { data: tickets, error } = await supabase
                     .from('tickets')
                     .select('ticket_id, created_at, assigned_at, status')
                     .eq('assigned_to', currentUser.assignee)
                     .eq('status', 'in-progress')
-                    .order('created_at', { ascending: sortOrder === 'asc' })
-                    .range(offset, offset + itemsPerPage - 1);
-                
+                    .order('created_at', { ascending: sortOrder === 'asc' });
+
                 if (error) throw error;
-                
+
                 if (ticketsTable) {
                     if (!tickets || tickets.length === 0) {
                         ticketsTable.innerHTML = `
@@ -1725,14 +1739,14 @@
                                 <td colspan="4" class="px-6 py-4 text-center">
                                     <div class="flex flex-col items-center">
                                         <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
-                                        <p class="text-gray-500">No tickets assigned</p>
+                                        <p class="text-gray-500">No in-progress tickets</p>
                                     </div>
                                 </td>
                             </tr>
                         `;
                     } else {
                         ticketsTable.innerHTML = tickets.map(ticket => `
-                            <tr class="hover:bg-gray-50 transition-all duration-150" data-ticket-id="${ticket.ticket_id}">
+                            <tr class="hover:bg-gray-50 transition-all duration-150">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center space-x-2">
                                         <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
@@ -1745,14 +1759,10 @@
                                     ${formatDate(ticket.created_at)}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    ${ticket.status === 'in-progress' ? 
-                                        '<span class="status-in-progress"><i class="fas fa-spinner"></i> IN PROGRESS</span>'
-                                     : `
-                                        <span class="status-pill status-${ticket.status}">
-                                            <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
-                                            ${formatTicketStatus(ticket.status)}
-                                        </span>
-                                    `}
+                                    <span class="status-in-progress">
+                                        <i class="fas fa-spinner"></i>
+                                        IN PROGRESS
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <button 
@@ -1767,28 +1777,13 @@
                     }
                 }
 
-                // Update pagination controls
-                const paginationControls = document.getElementById('pagination-controls');
-                const paginationInfo = document.getElementById('pagination-info');
-                const prevPageBtn = document.getElementById('prev-page');
-                const nextPageBtn = document.getElementById('next-page');
-
-                if (paginationControls && totalCount > itemsPerPage) {
-                    paginationControls.classList.remove('hidden');
-                    paginationInfo.textContent = `Showing ${offset + 1}-${Math.min(offset + itemsPerPage, totalCount)} of ${totalCount} tickets`;
-                    prevPageBtn.disabled = currentPage === 1;
-                    nextPageBtn.disabled = currentPage === totalPages;
-                } else if (paginationControls) {
-                    paginationControls.classList.add('hidden');
-                }
-                
                 if (refreshButton) {
                     refreshButton.classList.remove('btn-loading');
                     refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Refresh';
                 }
-                
+
                 await updateDashboardStats();
-                
+
             } catch (error) {
                 console.error('Error loading tickets:', error);
                 showNotification('Failed to load tickets', 'error');
@@ -1882,7 +1877,8 @@
                 
                 if (sessionError) {
                     console.error('Session error:', sessionError);
-                    throw sessionError;
+                    window.location.href = 'login.html';
+                    return false;
                 }
 
                 if (!session) {
@@ -1899,13 +1895,8 @@
                     .eq('email', session.user.email)
                     .single();
 
-                if (userError) {
-                    console.error('User data error:', userError);
-                    throw userError;
-                }
-
-                if (!userData || userData.role !== 'back-office') {
-                    console.log('Invalid user role, redirecting to login');
+                if (userError || !userData || userData.role !== 'back-office') {
+                    console.error('User data error or invalid role:', userError);
                     window.location.href = 'login.html';
                     return false;
                 }
@@ -2385,6 +2376,202 @@
                 showNotification('Failed to reset status', 'error');
             }
         }
+
+        // Add these new functions to your JavaScript section
+        async function loadNewTickets() {
+            try {
+                if (!currentUser || !currentUser.assignee) {
+                    console.error('User not initialized');
+                    showNotification('Please wait for user initialization', 'error');
+                    return;
+                }
+
+                // Get total count of new tickets assigned to current user
+                const { count: totalCount, error: countError } = await supabase
+                    .from('tickets')
+                    .select('*', { count: 'exact' })
+                    .eq('status', 'new')
+                    .eq('assigned_to', currentUser.assignee);
+
+                if (countError) throw countError;
+
+                // Calculate pagination
+                const itemsPerPage = 20;
+                const totalPages = Math.ceil(totalCount / itemsPerPage);
+                const currentPage = parseInt(localStorage.getItem('newTicketsCurrentPage')) || 1;
+                const offset = (currentPage - 1) * itemsPerPage;
+
+                // Get new tickets for current page
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('ticket_id, created_at, status')
+                    .eq('status', 'new')
+                    .eq('assigned_to', currentUser.assignee)
+                    .order('created_at', { ascending: false })
+                    .range(offset, offset + itemsPerPage - 1);
+
+                if (error) throw error;
+
+                const newTicketsTable = document.getElementById('new-tickets-table');
+                if (!tickets || tickets.length === 0) {
+                    newTicketsTable.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="px-6 py-4 text-center">
+                                <div class="flex flex-col items-center">
+                                    <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
+                                    <p class="text-gray-500">No new tickets available</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    newTicketsTable.innerHTML = tickets.map(ticket => `
+                        <tr class="hover:bg-gray-50 transition-all duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
+                                    <button onclick="copyTicketId('${ticket.ticket_id}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${formatDate(ticket.created_at)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-pill status-${ticket.status}">
+                                    <i class="fas fa-${getStatusIcon(ticket.status)}"></i>
+                                    ${formatTicketStatus(ticket.status)}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Update pagination controls
+                const prevNewPageBtn = document.getElementById('prev-new-page');
+                const nextNewPageBtn = document.getElementById('next-new-page');
+                const paginationInfo = document.getElementById('new-pagination-info');
+
+                prevNewPageBtn.disabled = currentPage === 1;
+                nextNewPageBtn.disabled = currentPage === totalPages;
+                paginationInfo.textContent = `Showing ${offset + 1}-${Math.min(offset + itemsPerPage, totalCount)} of ${totalCount} tickets`;
+
+            } catch (error) {
+                console.error('Error loading new tickets:', error);
+                showNotification('Failed to load new tickets', 'error');
+            }
+        }
+
+        // Add these functions for new tickets pagination
+        function prevNewPage() {
+            const currentPage = parseInt(localStorage.getItem('newTicketsCurrentPage')) || 1;
+            if (currentPage > 1) {
+                localStorage.setItem('newTicketsCurrentPage', currentPage - 1);
+                loadNewTickets();
+            }
+        }
+
+        function nextNewPage() {
+            const currentPage = parseInt(localStorage.getItem('newTicketsCurrentPage')) || 1;
+            localStorage.setItem('newTicketsCurrentPage', currentPage + 1);
+            loadNewTickets();
+        }
+
+        // Add event listeners for new tickets pagination
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... existing event listeners ...
+
+            document.getElementById('prev-new-page').addEventListener('click', prevNewPage);
+            document.getElementById('next-new-page').addEventListener('click', nextNewPage);
+
+            // Load both tables initially
+            loadNewTickets();
+            loadAssignedTickets();
+        });
+
+        // Modify the refresh functionality to update both tables
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            loadNewTickets();
+            loadAssignedTickets();
+        });
+
+        async function loadTickets() {
+            try {
+                // Get current user's email from session
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Get user's full name (assignee) from users table
+                const { data: userData, error: userError } = await supabase
+                    .from('requests_users')
+                    .select('assignee')
+                    .eq('email', session.user.email)
+                    .single();
+
+                if (userError) throw userError;
+
+                // Only fetch tickets assigned to current user
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .eq('assigned_to', userData.assignee)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Split tickets into new and in-progress
+                const newTickets = tickets.filter(t => t.status === 'new');
+                const inProgressTickets = tickets.filter(t => t.status === 'in-progress');
+
+                // Update new tickets table
+                const newTicketsTable = document.getElementById('new-tickets-table');
+                newTicketsTable.innerHTML = '';
+                newTickets.forEach(ticket => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${ticket.ticket_id}</td>
+                        <td>${formatDate(ticket.created_at)}</td>
+                        <td>
+                            <button onclick="startWorkingOnTicket('${ticket.ticket_id}')" class="btn btn-primary btn-sm">
+                                <i class="fas fa-play"></i> Start Working
+                            </button>
+                        </td>
+                    `;
+                    newTicketsTable.appendChild(row);
+                });
+
+                // Update in-progress tickets table
+                const inProgressTable = document.getElementById('in-progress-tickets-table');
+                inProgressTable.innerHTML = '';
+                inProgressTickets.forEach(ticket => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${ticket.ticket_id}</td>
+                        <td>${formatDate(ticket.created_at)}</td>
+                        <td>${formatDate(ticket.status_changed_at)}</td>
+                        <td>
+                            <button onclick="completeTicket('${ticket.ticket_id}')" class="btn btn-success btn-sm">
+                                <i class="fas fa-check"></i> Complete
+                            </button>
+                        </td>
+                    `;
+                    inProgressTable.appendChild(row);
+                });
+
+                // Update counts
+                document.getElementById('new-count').textContent = newTickets.length;
+                document.getElementById('in-progress-count').textContent = inProgressTickets.length;
+
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+                showNotification('Failed to load tickets', 'error');
+            }
+        }
     </script>
 </body>
+</html> 
 </html> 
