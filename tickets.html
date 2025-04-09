@@ -1231,20 +1231,26 @@
         // Get total break time for today
         async function getTotalBreakTimeToday(breakType) {
             try {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0); // Start of today
+                // Calculate the start of the "work day" (8 AM today or yesterday depending on current time)
+                const now = new Date();
+                const today8AM = new Date(now);
+                today8AM.setHours(8, 0, 0, 0);
+
+                // If current time is before 8 AM, use yesterday's 8 AM as start time
+                const startTime = now < today8AM ? 
+                    new Date(today8AM.getTime() - 24 * 60 * 60 * 1000) : // Yesterday 8 AM
+                    today8AM; // Today 8 AM
 
                 const { data: breaks, error } = await supabase
                     .from('employee_breaks')
                     .select('start_time, end_time')
                     .eq('employee_email', currentUser.email)
                     .eq('break_type', breakType)
-                    .gte('start_time', today.toISOString());
+                    .gte('start_time', startTime.toISOString());
 
                 if (error) throw error;
 
                 let totalMinutes = 0;
-                const now = new Date();
 
                 breaks.forEach(breakPeriod => {
                     const startTime = new Date(breakPeriod.start_time);
@@ -1948,7 +1954,22 @@
                     clearInterval(statusUpdateInterval);
                 }
 
-                // First update user status to offline
+                // Log the status change in employee_status_history
+                const { error: historyError } = await supabase
+                    .from('employee_status_history')
+                    .insert({
+                        employee_email: currentUser.email,
+                        previous_status: currentUser.status,
+                        new_status: 'offline',
+                        change_time: new Date().toISOString(),
+                        created_at: new Date().toISOString()
+                    });
+
+                if (historyError) {
+                    console.error('Error logging status history:', historyError);
+                }
+
+                // Update user status to offline
                 const { error: statusError } = await supabase
                     .from('requests_users')
                     .update({ 
@@ -1957,20 +1978,50 @@
                     })
                     .eq('assignee', currentUser.assignee);
 
-                if (statusError) throw statusError;
+                if (statusError) {
+                    console.error('Error updating status:', statusError);
+                }
 
-                // Clear local storage
-                localStorage.removeItem('statusStartTime');
-                localStorage.removeItem('currentStatus');
+                // Clear all storage types
+                try {
+                    // Clear localStorage
+                    localStorage.clear();
+                    
+                    // Clear sessionStorage
+                    sessionStorage.clear();
+                    
+                    // Clear Supabase specific items
+                    localStorage.removeItem('sb-pdcssepqmgzpkayzfqta-auth-token');
+                    sessionStorage.removeItem('sb-pdcssepqmgzpkayzfqta-auth-token');
+                    
+                    // Attempt to clear cookies
+                    document.cookie.split(";").forEach(function(c) { 
+                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                    });
+                } catch (storageError) {
+                    console.warn('Error clearing storage:', storageError);
+                }
 
-                // Then sign out
-                const { error } = await supabase.auth.signOut();
-                if (error) throw error;
+                // Attempt to sign out
+                try {
+                    await supabase.auth.signOut();
+                } catch (signOutError) {
+                    console.warn('Sign out error:', signOutError);
+                }
+
+                // Force redirect with cache bypass
+                const redirectUrl = 'login.html?t=' + new Date().getTime();
+                window.location.replace(redirectUrl);
                 
-                window.location.href = 'login.html';
+                // Fallback redirect if replace doesn't work
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 100);
+
             } catch (error) {
-                console.error('Error logging out:', error);
-                showNotification('Failed to logout', 'error');
+                console.error('Error in logout process:', error);
+                // Force redirect even on error
+                window.location.replace('login.html?t=' + new Date().getTime());
             }
         }
 
@@ -3082,8 +3133,7 @@
             }
         });
 
-        // ... rest of existing code ...
+       
     </script>
 </body>
 </html> 
-
