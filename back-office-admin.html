@@ -12,15 +12,48 @@
         /* Modern Dashboard Styles */
         .dashboard-card {
             background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .dashboard-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .dashboard-card .icon {
+            background-color: #f3f4f6;
+            border-radius: 50%;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+        }
+
+        .dashboard-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+
+        .dashboard-card p {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        .dashboard-card .description {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
         }
 
         .status-indicator {
@@ -44,11 +77,50 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
         }
 
         .employee-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add style for priority highlighting */
+        .employee-card[data-priority="1"] {
+            border-left: 4px solid #ef4444; /* Red for lunch break */
+        }
+        
+        .employee-card[data-priority="2"] {
+            border-left: 4px solid #f97316; /* Orange for coffee break */
+        }
+        
+        .employee-card[data-priority="3"] {
+            border-left: 4px solid #22c55e; /* Green for ready */
+        }
+        
+        /* Table row priority highlighting */
+        #employee-table-body tr[data-priority="1"] {
+            border-left: 4px solid #ef4444;
+        }
+        
+        #employee-table-body tr[data-priority="2"] {
+            border-left: 4px solid #f97316;
+        }
+        
+        #employee-table-body tr[data-priority="3"] {
+            border-left: 4px solid #22c55e;
+        }
+        
+        /* Add subtle fade-in animation for cards and rows */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .employee-card, #employee-table-body tr {
+            animation: fadeIn 0.3s ease forwards;
         }
 
         .status-dropdown {
@@ -89,25 +161,136 @@
             background-color: #f3f4f6;
         }
 
-        .break-progress {
-            height: 0.5rem;
-            border-radius: 9999px;
+        .break-timer {
+            width: 100%;
+            height: 8px;
             background-color: #f3f4f6;
+            border-radius: 4px;
             overflow: hidden;
-            margin-bottom: 0.5rem;
+            position: relative;
         }
 
-        .break-progress-fill {
+        .break-timer-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .coffee-progress, .lunch-progress, .login-progress {
             height: 100%;
             transition: width 0.3s ease;
         }
 
-        .break-progress-fill.coffee {
-            background-color: #f59e0b;
+        /* Table styles to match cards */
+        #employee-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border-radius: 0.5rem;
         }
 
-        .break-progress-fill.lunch {
-            background-color: #ef4444;
+        #employee-table thead th {
+            background-color: #f9fafb;
+            color: #6b7280;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #employee-table tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        #employee-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        #employee-table tbody tr:hover {
+            background-color: #f0f9ff;
+        }
+
+        #employee-table tbody tr td {
+            padding: 1rem 1.5rem;
+            vertical-align: middle;
+        }
+
+        /* Style for progress bars specifically in the table */
+        #employee-table .break-timer {
+            height: 6px;
+            width: 100%;
+            background-color: #f3f4f6;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #employee-table .break-timer-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        /* Status history modal styles */
+        .status-history-modal {
+            background: white;
+            border-radius: 1rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .status-history-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .status-history-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .status-history-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .status-history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .status-ready { background-color: #dcfce7; color: #166534; }
+        .status-coffee-break { background-color: #ffedd5; color: #9a3412; }
+        .status-lunch-break { background-color: #fee2e2; color: #b91c1c; }
+        .status-task { background-color: #e0e7ff; color: #3730a3; }
+        .status-offline { background-color: #f3f4f6; color: #6b7280; }
+
+        #status-history-modal {
+            overscroll-behavior: contain;
+        }
+
+        .status-history-modal > div:nth-child(2) {
+            overflow-y: auto;
+            max-height: calc(90vh - 4rem);
         }
 
         .view-switcher {
@@ -337,6 +520,100 @@
             background-color: #3b82f6;
             border-radius: 9999px;
         }
+
+        /* Improved loading bar styles */
+        .progress-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .progress-container .icon {
+            flex-shrink: 0;
+            width: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .progress-container .progress-bar {
+            flex-grow: 1;
+            height: 6px;
+            background-color: #f3f4f6;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-container .time-display {
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            color: #6b7280;
+            min-width: 3.5rem;
+            text-align: right;
+        }
+
+        .no-transition {
+            transition: none !important;
+        }
+        
+        /* Progress bar styles */
+        .break-timer {
+            width: 100%;
+            height: 8px;
+            background-color: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        [class*="coffee-progress-"],
+        [class*="lunch-progress-"],
+        [class*="login-progress-"] {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+            position: relative;
+            /* Remove min-width to prevent showing when usage is 0 */
+        }
+        
+        /* Hide progress bars completely when width is 0 */
+        [class*="coffee-progress-"][style="width: 0%;"],
+        [class*="lunch-progress-"][style="width: 0%;"],
+        [class*="login-progress-"][style="width: 0%;"] {
+            display: none;
+        }
+        
+        [class*="coffee-progress-"] {
+            background-color: #f97316 !important; /* Orange */
+        }
+        
+        [class*="lunch-progress-"] {
+            background-color: #ef4444 !important; /* Red */
+        }
+        
+        [class*="login-progress-"] {
+            background-color: #3b82f6 !important; /* Blue */
+        }
+        
+        /* Add shine effect to make progress bars more noticeable */
+        [class*="coffee-progress-"]::after,
+        [class*="lunch-progress-"]::after,
+        [class*="login-progress-"]::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 2s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -375,48 +652,64 @@
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <!-- Quick Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div class="dashboard-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Active Employees</p>
-                            <h3 class="text-2xl font-bold text-gray-900" id="active-employees">0</h3>
+                    <div class="flex items-center">
+                        <div class="icon">
+                            <i class="fas fa-users text-indigo-600"></i>
                         </div>
-                        <div class="bg-blue-100 p-3 rounded-full">
-                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        <div>
+                            <h3>Active Employees</h3>
+                            <p id="active-employees">0/0</p>
+                            <span class="description">Currently active</span>
                         </div>
                     </div>
                 </div>
                 <div class="dashboard-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">In Progress Tickets</p>
-                            <h3 class="text-2xl font-bold text-gray-900" id="in-progress-tickets">0</h3>
+                    <div class="flex items-center">
+                        <div class="icon">
+                            <i class="fas fa-ticket-alt text-emerald-600"></i>
                         </div>
-                        <div class="bg-yellow-100 p-3 rounded-full">
-                            <i class="fas fa-tasks text-yellow-600 text-xl"></i>
+                        <div>
+                            <h3>New Tickets</h3>
+                            <p id="new-tickets">0</p>
+                            <span class="description">Tickets awaiting action</span>
                         </div>
                     </div>
                 </div>
                 <div class="dashboard-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Overdue Tickets</p>
-                            <h3 class="text-2xl font-bold text-gray-900" id="overdue-tickets">0</h3>
+                    <div class="flex items-center">
+                        <div class="icon">
+                            <i class="fas fa-coffee text-amber-600"></i>
                         </div>
-                        <div class="bg-red-100 p-3 rounded-full">
-                            <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                        <div>
+                            <h3>Coffee Break</h3>
+                            <p id="coffee-break">0</p>
+                            <span class="description">Employees on coffee break</span>
                         </div>
                     </div>
                 </div>
                 <div class="dashboard-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Average Handling Time</p>
-                            <h3 class="text-2xl font-bold text-gray-900" id="avg-handling-time">0m</h3>
+                    <div class="flex items-center">
+                        <div class="icon">
+                            <i class="fas fa-utensils text-red-600"></i>
                         </div>
-                        <div class="bg-green-100 p-3 rounded-full">
-                            <i class="fas fa-clock text-green-600 text-xl"></i>
+                        <div>
+                            <h3>Lunch Break</h3>
+                            <p id="lunch-break">0</p>
+                            <span class="description">Employees on lunch break</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="flex items-center">
+                        <div class="icon">
+                            <i class="fas fa-star text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h3>Contractor Feedback</h3>
+                            <p id="contractor-feedback">0</p>
+                            <span class="description">Feedback received</span>
                         </div>
                     </div>
                 </div>
@@ -463,6 +756,11 @@
                                 <option value="lunch-break">Lunch Break</option>
                                 <option value="offline">Offline</option>
                             </select>
+                            <select id="employee-sort-order" class="status-filter">
+                                <option value="break">Sort by Break</option>
+                                <option value="ready">Sort by Ready</option>
+                                <option value="alpha">Sort by Name A-Z</option>
+                            </select>
                             <button id="refresh-employees" class="refresh-btn">
                                 <i class="fas fa-sync-alt"></i>
                                 Refresh
@@ -474,15 +772,16 @@
                         <!-- Employee cards will be loaded here -->
                     </div>
 
-                    <div id="employee-table" class="hidden">
-                        <table class="table">
+                    <div id="employee-table" class="hidden overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                        <table class="w-full">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Time in Status</th>
-                                    <th>Actions</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Break Time Left</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time in Status</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Stats</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="employee-table-body">
@@ -497,21 +796,37 @@
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-semibold text-gray-800">Ticket Monitoring</h2>
                         <div class="flex space-x-3">
-                            <select id="ticket-status-filter" class="form-select">
+                            <select id="ticket-status-filter" class="status-filter">
                                 <option value="all">All Statuses</option>
+                                <option value="new">New</option>
                                 <option value="in-progress">In Progress</option>
                                 <option value="overdue">Overdue</option>
                                 <option value="approaching">Approaching SLA</option>
                             </select>
-                            <button id="refresh-tickets" class="btn btn-secondary">
+                            <button id="refresh-tickets" class="refresh-btn">
                                 <i class="fas fa-sync-alt mr-2"></i>
                                 Refresh
                             </button>
                         </div>
                     </div>
 
-                    <div class="space-y-4" id="tickets-container">
+                    <div id="tickets-container" class="space-y-4">
                         <!-- Tickets will be loaded here -->
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h3 class="text-sm font-medium text-gray-600">New Tickets</h3>
+                            <p id="new-tickets" class="text-2xl font-bold text-blue-600">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h3 class="text-sm font-medium text-gray-600">In Progress</h3>
+                            <p id="in-progress-tickets" class="text-2xl font-bold text-green-600">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h3 class="text-sm font-medium text-gray-600">Overdue</h3>
+                            <p id="overdue-tickets" class="text-2xl font-bold text-red-600">0</p>
+                        </div>
                     </div>
                 </div>
 
@@ -551,6 +866,63 @@
         </div>
     </div>
 
+    <!-- Status History Modal Template -->
+    <div id="status-history-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-hidden">
+        <div class="status-history-modal">
+            <div class="flex justify-between items-center mb-4 sticky top-0 bg-white px-6 py-4 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-900">Status History</h3>
+                <button onclick="closeStatusHistory()" class="text-gray-500 hover:text-gray-700 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="px-6 pb-4">
+                <div class="mb-4">
+                    <input type="date" id="history-date" class="form-input w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" onchange="refreshStatusHistory()">
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200 shadow-sm">
+                    <h4 class="font-semibold text-gray-700 mb-3">Time Summary</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="text-sm text-gray-600">Ready Time:</p>
+                            <p id="ready-time" class="font-medium text-gray-800">0 minutes</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="text-sm text-gray-600">Task Time:</p>
+                            <p id="task-time" class="font-medium text-gray-800">0 minutes</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="text-sm text-gray-600">Coffee Break:</p>
+                            <p id="coffee-time" class="font-medium text-gray-800">0 minutes</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="text-sm text-gray-600">Lunch Break:</p>
+                            <p id="lunch-time" class="font-medium text-gray-800">0 minutes</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <p class="text-sm text-gray-600">Total Active Time:</p>
+                        <p id="total-time" class="font-medium text-gray-800 text-lg">0 minutes</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                    <table class="status-history-table w-full">
+                        <thead>
+                            <tr>
+                                <th class="bg-gray-50 text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
+                                <th class="bg-gray-50 text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Start Time</th>
+                                <th class="bg-gray-50 text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">End Time</th>
+                                <th class="bg-gray-50 text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="status-history-content">
+                            <!-- Status history will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Initialize Supabase client
         const supabaseUrl = 'https://pdcssepqmgzpkayzfqta.supabase.co';
@@ -560,6 +932,83 @@
         let currentUser = null;
         let statusCharts = {};
         let volumeChart = null;
+        let currentHistoryEmail = null;
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                // Get total and active employees count
+                const { data: employees } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('role', 'back-office');
+
+                if (!employees) {
+                    throw new Error('No employee data received');
+                }
+
+                const totalEmployees = employees.length;
+                const activeEmployees = employees.filter(emp => 
+                    emp.status === 'ready' || 
+                    emp.status === 'task' || 
+                    emp.status === 'coffee-break' || 
+                    emp.status === 'lunch-break'
+                ).length;
+
+                document.getElementById('active-employees').textContent = `${activeEmployees}/${totalEmployees}`;
+
+                // Get new tickets count
+                const { data: newTickets } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .eq('status', 'new');
+
+                document.getElementById('new-tickets').textContent = newTickets?.length || 0;
+
+                // Get employees on coffee and lunch breaks
+                const coffeeBreak = employees.filter(emp => emp.status === 'coffee-break').length;
+                const lunchBreak = employees.filter(emp => emp.status === 'lunch-break').length;
+
+                document.getElementById('coffee-break').textContent = coffeeBreak;
+                document.getElementById('lunch-break').textContent = lunchBreak;
+
+                // Update contractor feedback (placeholder)
+                document.getElementById('contractor-feedback').textContent = '0';
+
+                // Update charts if they exist
+                if (statusCharts && volumeChart) {
+                    updateCharts();
+                }
+
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                showNotification('Failed to load statistics', 'error');
+            }
+        }
+
+        // Set up realtime subscriptions
+        function setupRealTimeSubscriptions() {
+            // Subscribe to employee status changes
+            supabase
+                .channel('employee-status')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requests_users' }, payload => {
+                    if (payload.new.role === 'back-office') {
+                        loadEmployees();
+                        updateCharts();
+                    }
+                })
+                .subscribe();
+
+            // Subscribe to ticket changes
+            supabase
+                .channel('tickets')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
+                    loadTickets();
+                    loadStatistics();
+                    updateCharts();
+                })
+                .subscribe();
+        }
 
         // Initialize the dashboard
         document.addEventListener('DOMContentLoaded', async () => {
@@ -586,14 +1035,15 @@
                 currentUser = { ...session.user, ...userData };
                 document.getElementById('user-name').textContent = currentUser.assignee;
 
-                // Add event listeners
+                // Set up event listeners
                 document.getElementById('logout').addEventListener('click', handleLogout);
                 document.getElementById('refresh-employees').addEventListener('click', loadEmployees);
                 document.getElementById('refresh-tickets').addEventListener('click', loadTickets);
                 document.getElementById('employee-status-filter').addEventListener('change', loadEmployees);
                 document.getElementById('ticket-status-filter').addEventListener('change', loadTickets);
+                document.getElementById('employee-sort-order').addEventListener('change', loadEmployees);
 
-                // Tab switching
+                // Set up tab switching
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.addEventListener('click', () => {
                         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -608,7 +1058,22 @@
                     });
                 });
 
-                // Load initial data
+                // Set up view switching
+                document.getElementById('card-view').addEventListener('click', () => {
+                    document.getElementById('card-view').classList.add('active');
+                    document.getElementById('table-view').classList.remove('active');
+                    document.getElementById('employee-cards').classList.remove('hidden');
+                    document.getElementById('employee-table').classList.add('hidden');
+                });
+
+                document.getElementById('table-view').addEventListener('click', () => {
+                    document.getElementById('table-view').classList.add('active');
+                    document.getElementById('card-view').classList.remove('active');
+                    document.getElementById('employee-table').classList.remove('hidden');
+                    document.getElementById('employee-cards').classList.add('hidden');
+                });
+
+                // Initial load
                 await Promise.all([
                     loadEmployees(),
                     loadTickets(),
@@ -620,227 +1085,344 @@
 
                 // Hide loading spinner
                 document.getElementById('loading').classList.add('hidden');
+
+                // Set up smooth updates
+                setupSmoothUpdates();
+
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
                 showNotification('Failed to initialize dashboard', 'error');
             }
         });
 
-        // Load and display employees
-        async function loadEmployees() {
-            try {
-                const statusFilter = document.getElementById('employee-status-filter').value;
-                const { data: employees, error } = await supabase
+        // Set up periodic updates
+        function setupPeriodicUpdates() {
+            setInterval(async () => {
+                const { data: employees } = await supabase
                     .from('requests_users')
                     .select('*')
-                    .eq('role', 'back-office')
-                    .order('assignee');
+                    .eq('role', 'back-office');
 
-                if (error) throw error;
+                const { data: activeBreaks } = await supabase
+                    .from('employee_breaks')
+                    .select('*')
+                    .is('end_time', null);
 
-                if (!employees || !Array.isArray(employees)) {
-                    throw new Error('Invalid employees data received');
-                }
-
-                const container = document.getElementById('employee-cards');
-                const tableBody = document.getElementById('employee-table-body');
-                container.innerHTML = '';
-                tableBody.innerHTML = '';
+                const breaksByEmail = new Map(activeBreaks.map(break_ => [break_.employee_email, break_]));
 
                 employees.forEach(employee => {
-                    // Ensure employee has all required fields
-                    if (!employee || !employee.email || !employee.assignee) {
-                        console.warn('Invalid employee data:', employee);
-                        return;
-                    }
-
-                    // Set default status if not present
-                    if (!employee.status) {
-                        employee.status = 'offline';
-                    }
-
-                    if (statusFilter !== 'all' && employee.status !== statusFilter) return;
-
-                    // Create and append card
-                    const card = createEmployeeCard(employee);
-                    container.appendChild(card);
-
-                    // Create and append table row
-                    const row = createEmployeeTableRow(employee);
-                    tableBody.appendChild(row);
-
-                    // Update break timers
-                    updateBreakTimers(employee);
+                    const employeeBreak = breaksByEmail.get(employee.email);
+                    updateProgressBars(employee, employeeBreak);
                 });
-
-                // Start status timers
-                await startStatusTimers();
-            } catch (error) {
-                console.error('Error loading employees:', error);
-                showNotification('Failed to load employees: ' + error.message, 'error');
-            }
+            }, 1000); // Update every second for smoother progress
         }
 
-        // Load and display tickets
-        async function loadTickets() {
-            try {
-                const statusFilter = document.getElementById('ticket-status-filter').value;
-                const { data: tickets, error } = await supabase
-                    .from('tickets')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+        // Update the updateProgressBars function
+        function updateProgressBars(employee, activeBreak) {
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            const now = new Date();
 
-                if (error) throw error;
-
-                const container = document.getElementById('tickets-container');
-                container.innerHTML = '';
-
-                tickets.forEach(ticket => {
-                    if (statusFilter !== 'all') {
-                        if (statusFilter === 'overdue' && !isOverdue(ticket)) return;
-                        if (statusFilter === 'approaching' && !isApproachingSLA(ticket)) return;
-                        if (statusFilter === 'in-progress' && ticket.status !== 'in-progress') return;
-                    }
-
-                    const card = document.createElement('div');
-                    card.className = `ticket-card ${isOverdue(ticket) ? 'overdue' : isApproachingSLA(ticket) ? 'approaching' : ''}`;
-                    card.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="font-semibold text-gray-800">Ticket #${ticket.ticket_id}</h4>
-                                <p class="text-sm text-gray-500">Assigned to: ${ticket.assigned_to}</p>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <span class="text-sm text-gray-500">Created: ${formatDate(ticket.created_at)}</span>
-                                <span class="text-sm ${isOverdue(ticket) ? 'text-red-500' : isApproachingSLA(ticket) ? 'text-yellow-500' : 'text-gray-500'}">
-                                    ${formatDuration(ticket.created_at)}
-                                </span>
-                                <button onclick="sendReminder('${ticket.ticket_id}', '${ticket.assigned_to}')" 
-                                    class="btn btn-secondary">
-                                    <i class="fas fa-bell mr-2"></i>
-                                    Remind
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
-            } catch (error) {
-                console.error('Error loading tickets:', error);
-                showNotification('Failed to load tickets', 'error');
+            // Coffee break progress
+            const coffeeProgressBar = document.querySelector(`.coffee-progress-${encodedEmail}`);
+            const coffeeTimeDisplay = document.querySelector(`.coffee-time-${encodedEmail}`);
+            
+            if (employee.status === 'coffee-break' && activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, 30 - elapsedMinutes);
+                const progress = ((30 - remainingMinutes) / 30) * 100;
+                
+                if (coffeeProgressBar) {
+                    coffeeProgressBar.style.width = `${Math.min(100, progress)}%`;
+                    coffeeProgressBar.style.backgroundColor = '#f97316'; // Orange color
+                }
+                if (coffeeTimeDisplay) {
+                    coffeeTimeDisplay.textContent = `${remainingMinutes}m left`;
+                }
+            } else {
+                if (coffeeProgressBar) {
+                    coffeeProgressBar.style.width = '0%';
+                }
+                if (coffeeTimeDisplay) {
+                    coffeeTimeDisplay.textContent = '30m left';
+                }
             }
+
+            // Lunch break progress
+            const lunchProgressBar = document.querySelector(`.lunch-progress-${encodedEmail}`);
+            const lunchTimeDisplay = document.querySelector(`.lunch-time-${encodedEmail}`);
+            
+            if (employee.status === 'lunch-break' && activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, 40 - elapsedMinutes);
+                const progress = ((40 - remainingMinutes) / 40) * 100;
+                
+                if (lunchProgressBar) {
+                    lunchProgressBar.style.width = `${Math.min(100, progress)}%`;
+                    lunchProgressBar.style.backgroundColor = '#ef4444'; // Red color
+                }
+                if (lunchTimeDisplay) {
+                    lunchTimeDisplay.textContent = `${remainingMinutes}m left`;
+                }
+            } else {
+                if (lunchProgressBar) {
+                    lunchProgressBar.style.width = '0%';
+                }
+                if (lunchTimeDisplay) {
+                    lunchTimeDisplay.textContent = '40m left';
+                }
+            }
+
+            // Login time progress
+            const loginProgressBar = document.querySelector(`.login-progress-${encodedEmail}`);
+            const loginTimeDisplay = document.querySelector(`.login-time-${encodedEmail}`);
+            
+            // Calculate total login time from status history
+            calculateTotalTimeToday(employee.email).then(totals => {
+                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours in minutes
+                const progress = (totals.totalLoginTime / targetLoginMinutes) * 100;
+                const remainingMinutes = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+                
+                if (loginProgressBar) {
+                    loginProgressBar.style.width = `${Math.min(100, progress)}%`;
+                    loginProgressBar.style.backgroundColor = '#3b82f6'; // Blue color
+                }
+                if (loginTimeDisplay) {
+                    const hours = Math.floor(remainingMinutes / 60);
+                    const minutes = remainingMinutes % 60;
+                    loginTimeDisplay.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+                }
+            });
         }
 
-        // Load statistics
-        async function loadStatistics() {
-            try {
-                // Get active employees count
-                const { data: activeEmployees } = await supabase
-                    .from('requests_users')
-                    .select('*')
-                    .eq('role', 'back-office')
-                    .neq('status', 'offline');
+        // Update the updateEmployeeData function to include progress bar updates
+        function updateEmployeeData(employee, activeBreak, totals) {
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            
+            // Update status
+            const statusIndicator = document.querySelector(`.status-${encodedEmail}`);
+            if (statusIndicator) {
+                statusIndicator.innerHTML = `
+                    <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                    ${formatStatus(employee.status)}
+                `;
+            }
 
-                document.getElementById('active-employees').textContent = activeEmployees.length;
+            // Update progress bars and times
+            updateProgressBars(employee, activeBreak);
 
-                // Get in-progress tickets count
-                const { data: inProgressTickets } = await supabase
-                    .from('tickets')
-                    .select('*')
-                    .eq('status', 'in-progress');
+            // Update statistics
+            const readyTime = document.querySelector(`.ready-time-${encodedEmail}`);
+            const coffeeTime = document.querySelector(`.coffee-total-${encodedEmail}`);
+            const lunchTime = document.querySelector(`.lunch-total-${encodedEmail}`);
+            
+            if (readyTime) readyTime.textContent = formatDurationShort(totals.totalReadyTime);
+            if (coffeeTime) coffeeTime.textContent = formatDurationShort(totals.totalCoffeeTime);
+            if (lunchTime) lunchTime.textContent = formatDurationShort(totals.totalLunchTime);
+        }
 
-                document.getElementById('in-progress-tickets').textContent = inProgressTickets.length;
+        // Add CSS styles for the progress bars
+        const style = document.createElement('style');
+        style.textContent = `
+            .break-timer {
+                width: 100%;
+                height: 8px;
+                background-color: #f3f4f6;
+                border-radius: 4px;
+                overflow: hidden;
+            }
 
-                // Get overdue tickets count
-                const { data: allTickets } = await supabase
-                    .from('tickets')
-                    .select('*');
+            .break-timer-fill {
+                height: 100%;
+                transition: width 0.3s ease;
+                border-radius: 4px;
+            }
 
-                const overdueTickets = allTickets.filter(ticket => isOverdue(ticket));
-                document.getElementById('overdue-tickets').textContent = overdueTickets.length;
+            .coffee-progress, .lunch-progress, .login-progress {
+                height: 100%;
+                transition: width 0.3s ease;
+            }
+        `;
+        document.head.appendChild(style);
 
-                // Calculate average handling time
-                const { data: completedTickets } = await supabase
-                    .from('tickets')
-                    .select('created_at, avg_handling_time')
-                    .eq('status', 'closed');
+        // Add this new function to calculate total times
+        function calculateTotalTimes(history) {
+            let totalReadyTime = 0;
+            let totalCoffeeTime = 0;
+            let totalLunchTime = 0;
+            let totalLoginTime = 0;
 
-                let totalTime = 0;
-                let count = 0;
+            if (!history || history.length === 0) {
+                return { totalReadyTime, totalCoffeeTime, totalLunchTime, totalLoginTime };
+            }
 
-                completedTickets.forEach(ticket => {
-                    if (ticket.avg_handling_time) {
-                        const handlingTime = calculateHandlingTime(ticket.created_at, ticket.avg_handling_time);
-                        totalTime += handlingTime;
-                        count++;
-                    }
-                });
+            // Sort history by created_at
+            history.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-                const avgTime = count > 0 ? Math.round(totalTime / count) : 0;
-                document.getElementById('avg-handling-time').textContent = `${avgTime}m`;
-            } catch (error) {
-                console.error('Error loading statistics:', error);
-                showNotification('Failed to load statistics', 'error');
+            history.forEach((record, index) => {
+                const startTime = new Date(record.created_at);
+                const endTime = index === history.length - 1 
+                    ? new Date() 
+                    : new Date(history[index + 1].created_at);
+                
+                const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
+
+                switch (record.new_status) {
+                    case 'ready':
+                        totalReadyTime += duration;
+                        totalLoginTime += duration;
+                        break;
+                    case 'coffee-break':
+                        totalCoffeeTime += duration;
+                        totalLoginTime += duration;
+                        break;
+                    case 'lunch-break':
+                        totalLunchTime += duration;
+                        totalLoginTime += duration;
+                        break;
+                    case 'task':
+                        totalLoginTime += duration;
+                        break;
+                }
+            });
+
+            return { totalReadyTime, totalCoffeeTime, totalLunchTime, totalLoginTime };
+        }
+
+        // Update the updateBreakTimers function
+        function updateBreakTimers(employee, activeBreak, totals) {
+            if (!employee || !employee.email) return;
+
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            const now = new Date();
+
+            // Update coffee break progress
+            const coffeeProgress = document.querySelector(`.coffee-progress-${encodedEmail}`);
+            const coffeeTime = document.querySelector(`.coffee-time-${encodedEmail}`);
+            const coffeeTotal = document.querySelector(`.coffee-total-${encodedEmail}`);
+
+            if (employee.status === 'coffee-break' && activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, 30 - diffMinutes);
+                const progress = ((30 - remainingMinutes) / 30) * 100;
+
+                if (coffeeProgress) coffeeProgress.style.width = `${Math.min(100, progress)}%`;
+                if (coffeeTime) coffeeTime.textContent = `${remainingMinutes}m left`;
+            } else {
+                if (coffeeProgress) coffeeProgress.style.width = '0%';
+                if (coffeeTime) coffeeTime.textContent = '30m left';
+            }
+
+            // Update lunch break progress
+            const lunchProgress = document.querySelector(`.lunch-progress-${encodedEmail}`);
+            const lunchTime = document.querySelector(`.lunch-time-${encodedEmail}`);
+            const lunchTotal = document.querySelector(`.lunch-total-${encodedEmail}`);
+
+            if (employee.status === 'lunch-break' && activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, 40 - diffMinutes);
+                const progress = ((40 - remainingMinutes) / 40) * 100;
+
+                if (lunchProgress) lunchProgress.style.width = `${Math.min(100, progress)}%`;
+                if (lunchTime) lunchTime.textContent = `${remainingMinutes}m left`;
+            } else {
+                if (lunchProgress) lunchProgress.style.width = '0%';
+                if (lunchTime) lunchTime.textContent = '40m left';
+            }
+
+            // Update total times
+            const readyTime = document.querySelector(`.ready-time-${encodedEmail}`);
+            if (readyTime) readyTime.textContent = formatDurationShort(totals.totalReadyTime);
+            if (coffeeTotal) coffeeTotal.textContent = formatDurationShort(totals.totalCoffeeTime);
+            if (lunchTotal) lunchTotal.textContent = formatDurationShort(totals.totalLunchTime);
+
+            // Update login time progress
+            const loginProgress = document.querySelector(`.login-progress-${encodedEmail}`);
+            const loginTime = document.querySelector(`.login-time-${encodedEmail}`);
+            
+            if (loginProgress && loginTime) {
+                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours in minutes
+                const progress = (totals.totalLoginTime / targetLoginMinutes) * 100;
+                const remainingTime = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+
+                loginProgress.style.width = `${Math.min(100, progress)}%`;
+                loginTime.textContent = formatDurationShort(remainingTime) + ' left';
             }
         }
 
         // Initialize charts
         function initializeCharts() {
+            // Destroy existing charts if they exist
+            if (statusCharts && typeof statusCharts.destroy === 'function') {
+                statusCharts.destroy();
+            }
+            if (volumeChart && typeof volumeChart.destroy === 'function') {
+                volumeChart.destroy();
+            }
+
             // Status Distribution Chart
-            const statusCtx = document.getElementById('status-distribution-chart').getContext('2d');
-            statusCharts = new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Ready', 'Coffee Break', 'Lunch Break', 'Offline'],
-                    datasets: [{
-                        data: [0, 0, 0, 0],
-                        backgroundColor: [
-                            '#dcfce7',
-                            '#ffedd5',
-                            '#fee2e2',
-                            '#f3f4f6'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+            const statusCtx = document.getElementById('status-distribution-chart');
+            if (statusCtx) {
+                statusCharts = new Chart(statusCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Ready', 'Coffee Break', 'Lunch Break', 'Task', 'Offline'],
+                        datasets: [{
+                            data: [0, 0, 0, 0, 0],
+                            backgroundColor: [
+                                '#dcfce7',
+                                '#ffedd5',
+                                '#fee2e2',
+                                '#e0e7ff',
+                                '#f3f4f6'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Ticket Volume Chart
-            const volumeCtx = document.getElementById('ticket-volume-chart').getContext('2d');
-            volumeChart = new Chart(volumeCtx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Tickets',
-                        data: [],
-                        borderColor: '#3b82f6',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+            const volumeCtx = document.getElementById('ticket-volume-chart');
+            if (volumeCtx) {
+                volumeChart = new Chart(volumeCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Tickets',
+                            data: [],
+                            borderColor: '#3b82f6',
+                            tension: 0.4
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             updateCharts();
         }
@@ -858,6 +1440,7 @@
                     ready: 0,
                     'coffee-break': 0,
                     'lunch-break': 0,
+                    task: 0,
                     offline: 0
                 };
 
@@ -865,8 +1448,10 @@
                     statusCounts[emp.status]++;
                 });
 
-                statusCharts.data.datasets[0].data = Object.values(statusCounts);
-                statusCharts.update();
+                if (statusCharts) {
+                    statusCharts.data.datasets[0].data = Object.values(statusCounts);
+                    statusCharts.update();
+                }
 
                 // Update ticket volume
                 const { data: tickets } = await supabase
@@ -883,9 +1468,11 @@
                 const labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
                 const data = labels.map((_, i) => hourlyData[i] || 0);
 
-                volumeChart.data.labels = labels;
-                volumeChart.data.datasets[0].data = data;
-                volumeChart.update();
+                if (volumeChart) {
+                    volumeChart.data.labels = labels;
+                    volumeChart.data.datasets[0].data = data;
+                    volumeChart.update();
+                }
             } catch (error) {
                 console.error('Error updating charts:', error);
             }
@@ -1030,6 +1617,7 @@
                 case 'ready': return 'check-circle';
                 case 'coffee-break': return 'coffee';
                 case 'lunch-break': return 'utensils';
+                case 'task': return 'tasks';
                 case 'offline': return 'power-off';
                 default: return 'question-circle';
             }
@@ -1084,30 +1672,6 @@
             }, 3000);
         }
 
-        // Set up realtime subscriptions
-        function setupRealTimeSubscriptions() {
-            // Subscribe to employee status changes
-            supabase
-                .channel('employee-status')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'requests_users' }, payload => {
-                    if (payload.new.role === 'back-office') {
-                        loadEmployees();
-                        updateCharts();
-                    }
-                })
-                .subscribe();
-
-            // Subscribe to ticket changes
-            supabase
-                .channel('tickets')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
-                    loadTickets();
-                    loadStatistics();
-                    updateCharts();
-                })
-                .subscribe();
-        }
-
         // Handle logout
         async function handleLogout() {
             try {
@@ -1151,58 +1715,17 @@
             document.getElementById('employee-cards').classList.add('hidden');
         });
 
-        // Update break timers
-        function updateBreakTimers(employee) {
-            const coffeeBreakTime = document.getElementById(`coffee-break-time-${employee.email}`);
-            const lunchBreakTime = document.getElementById(`lunch-break-time-${employee.email}`);
-            const coffeeBreakProgress = document.getElementById(`coffee-break-progress-${employee.email}`);
-            const lunchBreakProgress = document.getElementById(`lunch-break-progress-${employee.email}`);
-
-            if (employee.status === 'coffee-break') {
-                const startTime = new Date(employee.updated_at);
-                const now = new Date();
-                const diff = Math.floor((now - startTime) / 1000);
-                const remaining = Math.max(0, 15 * 60 - diff); // 15 minutes in seconds
-                const progress = (remaining / (15 * 60)) * 100;
-                
-                coffeeBreakTime.textContent = formatTime(remaining);
-                coffeeBreakProgress.style.width = `${progress}%`;
-            } else {
-                coffeeBreakTime.textContent = '00:00:00';
-                coffeeBreakProgress.style.width = '0%';
-            }
-
-            if (employee.status === 'lunch-break') {
-                const startTime = new Date(employee.updated_at);
-                const now = new Date();
-                const diff = Math.floor((now - startTime) / 1000);
-                const remaining = Math.max(0, 30 * 60 - diff); // 30 minutes in seconds
-                const progress = (remaining / (30 * 60)) * 100;
-                
-                lunchBreakTime.textContent = formatTime(remaining);
-                lunchBreakProgress.style.width = `${progress}%`;
-            } else {
-                lunchBreakTime.textContent = '00:00:00';
-                lunchBreakProgress.style.width = '0%';
-            }
-        }
-
-        function formatTime(seconds) {
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-
         // Add this function to create table rows
-        function createEmployeeTableRow(employee) {
+        function createEmployeeTableRow(employee, activeBreak, totals) {
             const row = document.createElement('tr');
+            row.className = 'even:bg-gray-50 hover:bg-blue-50 transition-all duration-200';
             row.innerHTML = `
-                <td>${employee.assignee}</td>
-                <td>${employee.email}</td>
-                <td>
-                    <div class="status-dropdown">
-                        <span class="status-indicator status-${employee.status} cursor-pointer" onclick="toggleStatusDropdown(this)">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="font-medium text-gray-900">${employee.assignee}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="status-dropdown relative">
+                        <span class="status-indicator status-${employee.status} cursor-pointer inline-flex items-center px-4 py-2" onclick="toggleStatusDropdown(this)">
                             <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
                             ${formatStatus(employee.status)}
                         </span>
@@ -1212,7 +1735,7 @@
                                 Ready
                             </div>
                             <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
-                                <i class="fas fa-coffee text-amber-500"></i>
+                                <i class="fas fa-coffee text-orange-500"></i>
                                 Coffee Break
                             </div>
                             <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
@@ -1226,27 +1749,73 @@
                         </div>
                     </div>
                 </td>
-                <td id="status-duration-${employee.email}">00:00:00</td>
-                <td>
-                    <button onclick="viewEmployeeDetails('${employee.email}')" class="btn btn-secondary">
-                        <i class="fas fa-info-circle"></i>
-                    </button>
-                    <button onclick="resetEmployeeBreaks('${employee.email}')" class="btn btn-danger">
-                        <i class="fas fa-redo-alt"></i>
-                    </button>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-coffee text-orange-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="coffee-progress-${employee.email} h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-16 coffee-time-${employee.email}">30m left</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-utensils text-red-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="lunch-progress-${employee.email} h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-16 lunch-time-${employee.email}">40m left</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-clock text-blue-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="login-progress-${employee.email} h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-16 login-time-${employee.email}">8:30h left</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div id="status-duration-${employee.email}" class="text-sm font-medium text-gray-900">00:00:00</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Ready: <span class="font-medium ready-time-${employee.email}">0m</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-coffee text-orange-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Coffee: <span class="font-medium coffee-total-${employee.email}">0m</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-utensils text-red-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Lunch: <span class="font-medium lunch-total-${employee.email}">0m</span></span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center gap-3">
+                        <button onclick="showStatusHistory('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200" title="Status History">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button onclick="resetEmployeeBreaks('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-200" title="Reset Breaks">
+                            <i class="fas fa-redo-alt"></i>
+                        </button>
+                    </div>
                 </td>
             `;
             return row;
         }
 
-        // Add the missing createEmployeeCard function
-        function createEmployeeCard(employee) {
+        // Update the createEmployeeCard function
+        function createEmployeeCard(employee, activeBreak, totals) {
             if (!employee || !employee.email || !employee.assignee) {
                 console.error('Invalid employee data provided to createEmployeeCard');
                 return createErrorCard('Invalid employee data');
             }
 
             const status = employee.status || 'offline';
+            const encodedEmail = encodeEmailForSelector(employee.email);
             const card = document.createElement('div');
             card.className = 'employee-card';
             card.innerHTML = `
@@ -1266,7 +1835,7 @@
                                 Ready
                             </div>
                             <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
-                                <i class="fas fa-coffee text-amber-500"></i>
+                                <i class="fas fa-coffee text-orange-500"></i>
                                 Coffee Break
                             </div>
                             <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
@@ -1283,48 +1852,49 @@
                 <div class="space-y-4">
                     <div>
                         <div class="flex justify-between text-sm text-gray-500 mb-1">
-                            <span>Status Duration</span>
-                            <span id="status-duration-${employee.email}">00:00:00</span>
+                            <span>Coffee Break (30 min limit)</span>
+                            <span class="coffee-time-${encodedEmail}">30m left</span>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-bar-fill bg-blue-500" style="width: 0%"></div>
+                        <div class="break-timer">
+                            <div class="coffee-progress-${encodedEmail} h-full" style="width: 0%;"></div>
                         </div>
                     </div>
-                    <div class="space-y-2">
-                        <div>
-                            <div class="flex justify-between text-sm text-gray-500 mb-1">
-                                <span>Coffee Break</span>
-                                <span id="coffee-break-time-${employee.email}">00:00:00</span>
-                            </div>
-                            <div class="break-progress">
-                                <div class="break-progress-fill coffee" id="coffee-break-progress-${employee.email}" style="width: 0%"></div>
-                            </div>
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Lunch Break (40 min limit)</span>
+                            <span class="lunch-time-${encodedEmail}">40m left</span>
                         </div>
-                        <div>
-                            <div class="flex justify-between text-sm text-gray-500 mb-1">
-                                <span>Lunch Break</span>
-                                <span id="lunch-break-time-${employee.email}">00:00:00</span>
-                            </div>
-                            <div class="break-progress">
-                                <div class="break-progress-fill lunch" id="lunch-break-progress-${employee.email}" style="width: 0%"></div>
-                            </div>
+                        <div class="break-timer">
+                            <div class="lunch-progress-${encodedEmail} h-full" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Login Time (8:30h target)</span>
+                            <span class="login-time-${encodedEmail}">8:30h left</span>
+                        </div>
+                        <div class="break-timer">
+                            <div class="login-progress-${encodedEmail} h-full" style="width: 0%;"></div>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="text-center">
-                            <p class="text-sm text-gray-500">Tickets Today</p>
-                            <p class="text-xl font-semibold" id="tickets-count-${employee.email}">0</p>
+                            <p class="text-sm text-gray-500">Ready Time</p>
+                            <p class="text-xl font-semibold ready-time-${encodedEmail}">0m</p>
                         </div>
                         <div class="text-center">
-                            <p class="text-sm text-gray-500">Avg. Handling Time</p>
-                            <p class="text-xl font-semibold" id="avg-time-${employee.email}">0m</p>
+                            <p class="text-sm text-gray-500">Break Time</p>
+                            <p class="text-xl font-semibold">
+                                <span class="coffee-total-${encodedEmail}">0m</span> / 
+                                <span class="lunch-total-${encodedEmail}">0m</span>
+                            </p>
                         </div>
                     </div>
                 </div>
                 <div class="mt-4 flex justify-end space-x-2">
-                    <button onclick="viewEmployeeDetails('${employee.email}')" class="btn btn-secondary">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Details
+                    <button onclick="showStatusHistory('${employee.email}')" class="btn btn-secondary">
+                        <i class="fas fa-history mr-2"></i>
+                        Status History
                     </button>
                     <button onclick="resetEmployeeBreaks('${employee.email}')" class="btn btn-danger">
                         <i class="fas fa-redo-alt mr-2"></i>
@@ -1332,7 +1902,33 @@
                     </button>
                 </div>
             `;
+
             return card;
+        }
+
+        // Add this function to update today's tickets count
+        async function updateTodayTicketsCount(email) {
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .eq('assigned_to', email)
+                    .eq('status', 'closed')
+                    .gte('created_at', today.toISOString());
+
+                if (error) throw error;
+
+                const ticketsCount = tickets?.length || 0;
+                const element = document.getElementById(`tickets-count-${email}`);
+                if (element) {
+                    element.textContent = ticketsCount;
+                }
+            } catch (error) {
+                console.error('Error updating tickets count:', error);
+            }
         }
 
         // Add error card function
@@ -1348,6 +1944,1536 @@
                 </div>
             `;
             return card;
+        }
+
+        // Add function to start working on a ticket
+        async function startWorkingOnTicket(ticketId) {
+            try {
+                const { error } = await supabase
+                    .from('tickets')
+                    .update({
+                        status: 'in-progress',
+                        status_changed_at: new Date().toISOString()
+                    })
+                    .eq('ticket_id', ticketId);
+
+                if (error) throw error;
+
+                showNotification('Started working on ticket ' + ticketId, 'success');
+                loadTickets();  // Refresh the tickets list
+            } catch (error) {
+                console.error('Error starting work on ticket:', error);
+                showNotification('Failed to start working on ticket', 'error');
+            }
+        }
+
+        // Add this function to change employee status
+        async function changeEmployeeStatus(email, newStatus) {
+            try {
+                const { error } = await supabase
+                    .from('requests_users')
+                    .update({
+                        status: newStatus,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('email', email);
+
+                if (error) throw error;
+
+                showNotification(`Employee status updated to ${formatStatus(newStatus)}`, 'success');
+                loadEmployees();
+                updateCharts();
+            } catch (error) {
+                console.error('Error changing employee status:', error);
+                showNotification('Failed to change employee status', 'error');
+            }
+        }
+
+        // Add these new functions to your JavaScript section:
+        async function showStatusHistory(email) {
+            try {
+                currentHistoryEmail = email;
+                const modal = document.getElementById('status-history-modal');
+                const dateInput = document.getElementById('history-date');
+                
+                // Set today as default date
+                const today = new Date();
+                dateInput.valueAsDate = today;
+                
+                await refreshStatusHistory();
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading status history:', error);
+                showNotification('Failed to load status history', 'error');
+            }
+        }
+
+        async function refreshStatusHistory() {
+            if (!currentHistoryEmail) return;
+
+            try {
+                const selectedDate = document.getElementById('history-date').valueAsDate;
+                const startOfDay = new Date(selectedDate);
+                startOfDay.setHours(0, 0, 0, 0);
+                
+                const endOfDay = new Date(selectedDate);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                const { data: statusHistory, error } = await supabase
+                    .from('employee_status_history')
+                    .select('*')
+                    .eq('employee_email', currentHistoryEmail)
+                    .gte('created_at', startOfDay.toISOString())
+                    .lte('created_at', endOfDay.toISOString())
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                // Calculate time spent in each status
+                let timeInStatus = {
+                    ready: 0,
+                    task: 0,
+                    'coffee-break': 0,
+                    'lunch-break': 0
+                };
+
+                statusHistory.forEach((record, index) => {
+                    const startTime = new Date(record.created_at);
+                    const endTime = index === statusHistory.length - 1 
+                        ? new Date() 
+                        : new Date(statusHistory[index + 1].created_at);
+                    
+                    const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
+                    
+                    if (timeInStatus.hasOwnProperty(record.new_status)) {
+                        timeInStatus[record.new_status] += duration;
+                    }
+                });
+
+                // Update time summary with formatted durations
+                document.getElementById('ready-time').textContent = formatDurationWithHours(timeInStatus.ready);
+                document.getElementById('task-time').textContent = formatDurationWithHours(timeInStatus.task);
+                document.getElementById('coffee-time').textContent = formatDurationWithHours(timeInStatus['coffee-break']);
+                document.getElementById('lunch-time').textContent = formatDurationWithHours(timeInStatus['lunch-break']);
+                
+                const totalActiveTime = timeInStatus.ready + timeInStatus.task + 
+                    timeInStatus['coffee-break'] + timeInStatus['lunch-break'];
+                document.getElementById('total-time').textContent = formatDurationWithHours(totalActiveTime);
+
+                // Update history table
+                const content = document.getElementById('status-history-content');
+                content.innerHTML = statusHistory.map((record, index) => {
+                    const startTime = new Date(record.created_at);
+                    const endTime = index === statusHistory.length - 1 
+                        ? new Date() 
+                        : new Date(statusHistory[index + 1].created_at);
+                    const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
+
+                    return `
+                        <tr class="hover:bg-gray-50 transition-all duration-150">
+                            <td class="px-6 py-4">
+                                <span class="status-indicator status-${record.new_status}">
+                                    <i class="fas fa-${getStatusIcon(record.new_status)} mr-2"></i>
+                                    ${formatStatus(record.new_status)}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">${formatTime(startTime)}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">${index === statusHistory.length - 1 ? 'Current' : formatTime(endTime)}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${formatDurationWithHours(duration)}</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="4" class="text-center py-8 text-gray-500">No status changes on selected date</td></tr>';
+
+            } catch (error) {
+                console.error('Error refreshing status history:', error);
+                showNotification('Failed to refresh status history', 'error');
+            }
+        }
+
+        function closeStatusHistory() {
+            document.getElementById('status-history-modal').classList.add('hidden');
+            currentHistoryEmail = null;
+        }
+
+        // Add this new function to format duration
+        function formatDurationWithHours(minutes) {
+            if (!minutes || minutes < 1) return '0 minutes';
+            
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            
+            if (hours === 0) {
+                return `${minutes} minutes`;
+            } else if (remainingMinutes === 0) {
+                return hours === 1 ? '1 hour' : `${hours} hours`;
+            } else {
+                const hourText = hours === 1 ? 'hour' : 'hours';
+                return `${hours} ${hourText} ${remainingMinutes} min`;
+            }
+        }
+
+        // Add these functions after the existing updateBreakTimers function
+        async function calculateTotalTimeToday(email) {
+            try {
+                const encodedEmail = encodeEmailForSelector(email);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const { data: history, error } = await supabase
+                    .from('employee_status_history')
+                    .select('*')
+                    .eq('employee_email', email)
+                    .gte('created_at', today.toISOString())
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                let totalReadyTime = 0;
+                let totalCoffeeTime = 0;
+                let totalLunchTime = 0;
+                let totalLoginTime = 0;
+
+                history.forEach((record, index) => {
+                    const startTime = new Date(record.created_at);
+                    const endTime = index === history.length - 1 
+                        ? new Date() 
+                        : new Date(history[index + 1].created_at);
+                    
+                    const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
+
+                    switch (record.new_status) {
+                        case 'ready':
+                            totalReadyTime += duration;
+                            totalLoginTime += duration;
+                            break;
+                        case 'coffee-break':
+                            totalCoffeeTime += duration;
+                            totalLoginTime += duration;
+                            break;
+                        case 'lunch-break':
+                            totalLunchTime += duration;
+                            totalLoginTime += duration;
+                            break;
+                    }
+                });
+
+                // Update the stats display
+                const readyTimeElement = document.querySelector(`.ready-time-${encodedEmail}`);
+                const coffeeTimeElement = document.querySelector(`.coffee-total-${encodedEmail}`);
+                const lunchTimeElement = document.querySelector(`.lunch-total-${encodedEmail}`);
+
+                if (readyTimeElement) readyTimeElement.textContent = formatDurationShort(totalReadyTime);
+                if (coffeeTimeElement) coffeeTimeElement.textContent = formatDurationShort(totalCoffeeTime);
+                if (lunchTimeElement) lunchTimeElement.textContent = formatDurationShort(totalLunchTime);
+
+                // Update login time progress
+                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours in minutes
+                const loginProgress = (totalLoginTime / targetLoginMinutes) * 100;
+                const loginProgressElement = document.querySelector(`.login-progress-${encodedEmail}`);
+                const loginTimeElement = document.querySelector(`.login-time-${encodedEmail}`);
+
+                if (loginProgressElement) {
+                    loginProgressElement.style.width = `${Math.min(100, loginProgress)}%`;
+                }
+                if (loginTimeElement) {
+                    const remainingTime = Math.max(0, targetLoginMinutes - totalLoginTime);
+                    const hours = Math.floor(remainingTime / 60);
+                    const minutes = remainingTime % 60;
+                    // Use consistent format
+                    loginTimeElement.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+                }
+
+                return { totalReadyTime, totalCoffeeTime, totalLunchTime, totalLoginTime };
+            } catch (error) {
+                console.error('Error calculating total time:', error);
+                return { totalReadyTime: 0, totalCoffeeTime: 0, totalLunchTime: 0, totalLoginTime: 0 };
+            }
+        }
+
+        function formatDurationShort(minutes) {
+            if (minutes < 60) {
+                return `${minutes}m`;
+            } else {
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                // Use consistent format "Xh XXm" with padded minutes
+                return `${hours}h ${remainingMinutes.toString().padStart(2, '0')}m`;
+            }
+        }
+
+        // Add this helper function after the formatDurationShort function
+        function encodeEmailForSelector(email) {
+            return email.replace(/[@.]/g, '_');
+        }
+
+        // Update the createEmployeeTableRow function to use encoded email
+        function createEmployeeTableRow(employee, activeBreak, totals) {
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            const row = document.createElement('tr');
+            row.className = 'even:bg-gray-50 hover:bg-blue-50 transition-all duration-200';
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="font-medium text-gray-900">${employee.assignee}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="status-dropdown relative">
+                        <span class="status-indicator status-${employee.status} cursor-pointer inline-flex items-center px-4 py-2" onclick="toggleStatusDropdown(this)">
+                            <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                            ${formatStatus(employee.status)}
+                        </span>
+                        <div class="status-dropdown-content">
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'ready')">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                Ready
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
+                                <i class="fas fa-coffee text-orange-500"></i>
+                                Coffee Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
+                                <i class="fas fa-utensils text-red-500"></i>
+                                Lunch Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'offline')">
+                                <i class="fas fa-power-off text-gray-500"></i>
+                                Offline
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-coffee text-orange-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="coffee-progress-${encodedEmail} h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-16 coffee-time-${encodedEmail}">30m left</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-utensils text-red-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="lunch-progress-${encodedEmail} h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-16 lunch-time-${encodedEmail}">40m left</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-clock text-blue-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="login-progress-${encodedEmail} h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-16 login-time-${encodedEmail}">8:30h left</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div id="status-duration-${encodedEmail}" class="text-sm font-medium text-gray-900">00:00:00</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Ready: <span class="font-medium ready-time-${encodedEmail}">0m</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-coffee text-orange-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Coffee: <span class="font-medium coffee-total-${encodedEmail}">0m</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-utensils text-red-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Lunch: <span class="font-medium lunch-total-${encodedEmail}">0m</span></span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center gap-3">
+                        <button onclick="showStatusHistory('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200" title="Status History">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button onclick="resetEmployeeBreaks('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-200" title="Reset Breaks">
+                            <i class="fas fa-redo-alt"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            return row;
+        }
+
+        // Update the updateBreakTimers function to use encoded email
+        async function updateBreakTimers(employee, activeBreak, totals) {
+            try {
+                const encodedEmail = encodeEmailForSelector(employee.email);
+                // Calculate break times
+                const { data: breaks, error } = await supabase
+                    .from('employee_breaks')
+                    .select('*')
+                    .eq('employee_email', employee.email)
+                    .is('end_time', null)
+                    .order('start_time', { ascending: false })
+                    .limit(1);
+
+                if (error) throw error;
+
+                const currentBreak = breaks?.[0];
+                
+                // Update coffee break progress
+                if (employee.status === 'coffee-break' && currentBreak) {
+                    const startTime = new Date(currentBreak.start_time);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 30 - diffMinutes);
+                    const progress = ((30 - remainingMinutes) / 30) * 100;
+
+                    const coffeeProgress = document.querySelector(`.coffee-progress-${encodedEmail}`);
+                    const coffeeTime = document.querySelector(`.coffee-time-${encodedEmail}`);
+
+                    if (coffeeProgress) coffeeProgress.style.width = `${Math.min(100, progress)}%`;
+                    if (coffeeTime) coffeeTime.textContent = `${remainingMinutes}m left`;
+                } else {
+                    const coffeeProgress = document.querySelector(`.coffee-progress-${encodedEmail}`);
+                    const coffeeTime = document.querySelector(`.coffee-time-${encodedEmail}`);
+
+                    if (coffeeProgress) coffeeProgress.style.width = '0%';
+                    if (coffeeTime) coffeeTime.textContent = '30m left';
+                }
+
+                // Update lunch break progress
+                if (employee.status === 'lunch-break' && currentBreak) {
+                    const startTime = new Date(currentBreak.start_time);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 40 - diffMinutes);
+                    const progress = ((40 - remainingMinutes) / 40) * 100;
+
+                    const lunchProgress = document.querySelector(`.lunch-progress-${encodedEmail}`);
+                    const lunchTime = document.querySelector(`.lunch-time-${encodedEmail}`);
+
+                    if (lunchProgress) lunchProgress.style.width = `${Math.min(100, progress)}%`;
+                    if (lunchTime) lunchTime.textContent = `${remainingMinutes}m left`;
+                } else {
+                    const lunchProgress = document.querySelector(`.lunch-progress-${encodedEmail}`);
+                    const lunchTime = document.querySelector(`.lunch-time-${encodedEmail}`);
+
+                    if (lunchProgress) lunchProgress.style.width = '0%';
+                    if (lunchTime) lunchTime.textContent = '40m left';
+                }
+
+                // Update total times
+                await calculateTotalTimeToday(employee.email);
+
+            } catch (error) {
+                console.error('Error updating break timers:', error);
+            }
+        }
+
+        // Update the calculateTotalTimeToday function to use encoded email
+        async function calculateTotalTimeToday(email) {
+            try {
+                const encodedEmail = encodeEmailForSelector(email);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const { data: history, error } = await supabase
+                    .from('employee_status_history')
+                    .select('*')
+                    .eq('employee_email', email)
+                    .gte('created_at', today.toISOString())
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                let totalReadyTime = 0;
+                let totalCoffeeTime = 0;
+                let totalLunchTime = 0;
+                let totalLoginTime = 0;
+
+                history.forEach((record, index) => {
+                    const startTime = new Date(record.created_at);
+                    const endTime = index === history.length - 1 
+                        ? new Date() 
+                        : new Date(history[index + 1].created_at);
+                    
+                    const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
+
+                    switch (record.new_status) {
+                        case 'ready':
+                            totalReadyTime += duration;
+                            totalLoginTime += duration;
+                            break;
+                        case 'coffee-break':
+                            totalCoffeeTime += duration;
+                            totalLoginTime += duration;
+                            break;
+                        case 'lunch-break':
+                            totalLunchTime += duration;
+                            totalLoginTime += duration;
+                            break;
+                    }
+                });
+
+                // Update the stats display
+                const readyTimeElement = document.querySelector(`.ready-time-${encodedEmail}`);
+                const coffeeTimeElement = document.querySelector(`.coffee-total-${encodedEmail}`);
+                const lunchTimeElement = document.querySelector(`.lunch-total-${encodedEmail}`);
+
+                if (readyTimeElement) readyTimeElement.textContent = formatDurationShort(totalReadyTime);
+                if (coffeeTimeElement) coffeeTimeElement.textContent = formatDurationShort(totalCoffeeTime);
+                if (lunchTimeElement) lunchTimeElement.textContent = formatDurationShort(totalLunchTime);
+
+                // Update login time progress
+                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours in minutes
+                const loginProgress = (totalLoginTime / targetLoginMinutes) * 100;
+                const loginProgressElement = document.querySelector(`.login-progress-${encodedEmail}`);
+                const loginTimeElement = document.querySelector(`.login-time-${encodedEmail}`);
+
+                if (loginProgressElement) {
+                    loginProgressElement.style.width = `${Math.min(100, loginProgress)}%`;
+                }
+                if (loginTimeElement) {
+                    const remainingTime = Math.max(0, targetLoginMinutes - totalLoginTime);
+                    const hours = Math.floor(remainingTime / 60);
+                    const minutes = remainingTime % 60;
+                    // Use consistent format
+                    loginTimeElement.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+                }
+
+                return { totalReadyTime, totalCoffeeTime, totalLunchTime, totalLoginTime };
+            } catch (error) {
+                console.error('Error calculating total time:', error);
+                return { totalReadyTime: 0, totalCoffeeTime: 0, totalLunchTime: 0, totalLoginTime: 0 };
+            }
+        }
+
+        // Load and display tickets
+        async function loadTickets() {
+            try {
+                const statusFilter = document.getElementById('ticket-status-filter')?.value || 'all';
+                const { data: tickets, error } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const container = document.getElementById('tickets-container');
+                if (!container) {
+                    console.error('Tickets container not found');
+                    return;
+                }
+
+                // Clear existing content
+                container.innerHTML = '';
+
+                if (!tickets || tickets.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
+                            <p class="text-gray-500">No tickets found</p>
+                        </div>
+                    `;
+
+                    // Update counters
+                    updateTicketCounters([], statusFilter);
+                    return;
+                }
+
+                const filteredTickets = tickets.filter(ticket => {
+                    if (statusFilter === 'all') return true;
+                    if (statusFilter === 'overdue') return isOverdue(ticket);
+                    if (statusFilter === 'approaching') return isApproachingSLA(ticket);
+                    return ticket.status === statusFilter;
+                });
+
+                // Create and append ticket cards
+                filteredTickets.forEach(ticket => {
+                    const card = createTicketCard(ticket);
+                    container.appendChild(card);
+                });
+
+                // Update counters
+                updateTicketCounters(tickets, statusFilter);
+
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+                showNotification('Failed to load tickets', 'error');
+            }
+        }
+
+        // Add this new helper function for creating ticket cards
+        function createTicketCard(ticket) {
+            const card = document.createElement('div');
+            card.className = `bg-white rounded-lg shadow-sm p-4 mb-4 border-l-4 ${
+                isOverdue(ticket) ? 'border-red-500' :
+                isApproachingSLA(ticket) ? 'border-yellow-500' :
+                'border-blue-500'
+            }`;
+            
+            card.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Ticket #${ticket.ticket_id}</h4>
+                        <p class="text-sm text-gray-500">Status: ${formatStatus(ticket.status)}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-500">Created: ${formatDate(ticket.created_at)}</span>
+                        <span class="text-sm ${
+                            isOverdue(ticket) ? 'text-red-500' :
+                            isApproachingSLA(ticket) ? 'text-yellow-500' :
+                            'text-gray-500'
+                        }">
+                            ${formatDuration(ticket.created_at)}
+                        </span>
+                        ${ticket.status === 'new' ? `
+                            <button onclick="startWorkingOnTicket('${ticket.ticket_id}')" 
+                                class="btn btn-sm btn-primary">
+                                <i class="fas fa-play mr-2"></i>
+                                Start Working
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Add this new helper function for updating ticket counters
+        function updateTicketCounters(tickets, statusFilter) {
+            const newTickets = tickets.filter(t => t.status === 'new').length;
+            const inProgressTickets = tickets.filter(t => t.status === 'in-progress').length;
+            const overdueTickets = tickets.filter(t => isOverdue(t)).length;
+            
+            const elements = {
+                new: document.getElementById('new-tickets'),
+                inProgress: document.getElementById('in-progress-tickets'),
+                overdue: document.getElementById('overdue-tickets')
+            };
+
+            if (elements.new) elements.new.textContent = newTickets;
+            if (elements.inProgress) elements.inProgress.textContent = inProgressTickets;
+            if (elements.overdue) elements.overdue.textContent = overdueTickets;
+        }
+
+        // Helper functions for ticket handling
+        function isOverdue(ticket) {
+            if (!ticket.created_at) return false;
+            const created = new Date(ticket.created_at);
+            const now = new Date();
+            const hours = (now - created) / (1000 * 60 * 60);
+            return hours > 24; // Ticket is overdue if older than 24 hours
+        }
+
+        function isApproachingSLA(ticket) {
+            if (!ticket.created_at) return false;
+            const created = new Date(ticket.created_at);
+            const now = new Date();
+            const hours = (now - created) / (1000 * 60 * 60);
+            return hours > 20 && hours <= 24; // Warning if between 20-24 hours
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatDuration(dateString) {
+            if (!dateString) return 'N/A';
+            const start = new Date(dateString);
+            const now = new Date();
+            const hours = Math.floor((now - start) / (1000 * 60 * 60));
+            const minutes = Math.floor(((now - start) % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Function to start working on a ticket
+        async function startWorkingOnTicket(ticketId) {
+            try {
+                const { error } = await supabase
+                    .from('tickets')
+                    .update({ 
+                        status: 'in-progress',
+                        assigned_to: currentUser.email,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('ticket_id', ticketId);
+
+                if (error) throw error;
+
+                await loadTickets();
+                showNotification('Started working on ticket #' + ticketId, 'success');
+            } catch (error) {
+                console.error('Error starting work on ticket:', error);
+                showNotification('Failed to start working on ticket', 'error');
+            }
+        }
+
+        // Add tab switching functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    // Remove active class from all links
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    // Add active class to clicked link
+                    link.classList.add('active');
+                    
+                    // Hide all tabs
+                    document.querySelectorAll('[id$="-tab"]').forEach(tab => tab.classList.add('hidden'));
+                    // Show selected tab
+                    document.getElementById(`${link.dataset.tab}-tab`).classList.remove('hidden');
+                    
+                    // Initialize charts if analytics tab is selected
+                    if (link.dataset.tab === 'analytics') {
+                        initializeCharts();
+                    }
+                });
+            });
+        });
+
+        // Add view switcher functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const cardView = document.getElementById('card-view');
+            const tableView = document.getElementById('table-view');
+            const employeeCards = document.getElementById('employee-cards');
+            const employeeTable = document.getElementById('employee-table');
+
+            if (cardView && tableView && employeeCards && employeeTable) {
+                cardView.addEventListener('click', () => {
+                    cardView.classList.add('active');
+                    tableView.classList.remove('active');
+                    employeeCards.classList.remove('hidden');
+                    employeeTable.classList.add('hidden');
+                });
+
+                tableView.addEventListener('click', () => {
+                    tableView.classList.add('active');
+                    cardView.classList.remove('active');
+                    employeeTable.classList.remove('hidden');
+                    employeeCards.classList.add('hidden');
+                });
+            }
+        });
+
+        // Format time for status history display
+        function formatTime(date) {
+            if (!date) return 'N/A';
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        // Add this function to load and display employees
+        async function loadEmployees() {
+            try {
+                // Show loading indicator
+                const refreshButton = document.getElementById('refresh-employees');
+                if (refreshButton) {
+                    refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                    refreshButton.disabled = true;
+                }
+
+                const statusFilter = document.getElementById('employee-status-filter').value;
+                const sortOrder = document.getElementById('employee-sort-order').value;
+                
+                console.log(`Loading employees with filter: ${statusFilter}, sort: ${sortOrder}`);
+                
+                // Get all data in parallel
+                const [employeesResponse, breaksResponse, historyResponse] = await Promise.all([
+                    supabase.from('requests_users')
+                        .select('*')
+                        .eq('role', 'back-office')
+                        .order('assignee'),
+                    supabase.from('employee_breaks')
+                        .select('*')
+                        .is('end_time', null),
+                    supabase.from('employee_status_history')
+                        .select('*')
+                        .gte('created_at', new Date().toISOString().split('T')[0])
+                ]);
+
+                if (employeesResponse.error) throw employeesResponse.error;
+
+                const employees = employeesResponse.data;
+                console.log(`Found ${employees ? employees.length : 0} total employees`);
+                
+                const breaksByEmail = new Map(breaksResponse.data.map(break_ => [break_.employee_email, break_]));
+                const historyByEmail = new Map();
+                
+                historyResponse.data.forEach(record => {
+                    if (!historyByEmail.has(record.employee_email)) {
+                        historyByEmail.set(record.employee_email, []);
+                    }
+                    historyByEmail.get(record.employee_email).push(record);
+                });
+
+                // Filter employees based on status
+                let filteredEmployees = statusFilter === 'all' 
+                    ? employees 
+                    : employees.filter(emp => emp.status === statusFilter);
+                    
+                console.log(`Filtered to ${filteredEmployees.length} employees based on status: ${statusFilter}`);
+                    
+                // Sort employees based on selected criteria
+                filteredEmployees = sortEmployees(filteredEmployees, sortOrder);
+                console.log(`Sorted employees based on: ${sortOrder}`);
+
+                // Clear existing containers completely before adding new cards/rows
+                const cardsContainer = document.getElementById('employee-cards');
+                const tableBody = document.getElementById('employee-table-body');
+                
+                if (cardsContainer) cardsContainer.innerHTML = '';
+                if (tableBody) tableBody.innerHTML = '';
+
+                console.log(`Displaying ${filteredEmployees.length} employees`);
+
+                // Create and append all cards/rows at once
+                filteredEmployees.forEach((employee, index) => {
+                    const employeeBreak = breaksByEmail.get(employee.email);
+                    const employeeHistory = historyByEmail.get(employee.email) || [];
+                    const totals = calculateTotalTimes(employeeHistory);
+                    const encodedEmail = encodeEmailForSelector(employee.email);
+
+                    // Create and append card
+                    if (cardsContainer) {
+                        const card = document.createElement('div');
+                        card.className = 'employee-card';
+                        card.setAttribute('data-email', employee.email);
+                        card.setAttribute('data-status-time', employee.updated_at);
+                        card.id = `employee-card-${encodedEmail}`;
+                        card.setAttribute('data-status', employee.status);
+                        card.setAttribute('data-priority', 
+                            employee.status === 'lunch-break' ? '1' : 
+                            employee.status === 'coffee-break' ? '2' : 
+                            employee.status === 'ready' ? '3' : '4');
+                        
+                        // Create card content
+                        card.innerHTML = createEmployeeCardHTML(employee, encodedEmail, totals);
+                        cardsContainer.appendChild(card);
+                    }
+
+                    // Create and append table row
+                    if (tableBody) {
+                        const row = document.createElement('tr');
+                        row.className = 'even:bg-gray-50 hover:bg-blue-50 transition-all duration-200';
+                        row.setAttribute('data-email', employee.email);
+                        row.setAttribute('data-status-time', employee.updated_at);
+                        row.id = `employee-row-${encodedEmail}`;
+                        row.setAttribute('data-status', employee.status);
+                        row.setAttribute('data-priority', 
+                            employee.status === 'lunch-break' ? '1' : 
+                            employee.status === 'coffee-break' ? '2' : 
+                            employee.status === 'ready' ? '3' : '4');
+                        
+                        // Create row content
+                        row.innerHTML = createEmployeeRowHTML(employee, encodedEmail, totals);
+                        tableBody.appendChild(row);
+                    }
+
+                    // Update break timers
+                    updateBreakProgressBars(employee, employeeBreak);
+                    startStatusTimer(employee);
+                });
+
+                // Restore refresh button
+                if (refreshButton) {
+                    setTimeout(() => {
+                        refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                        refreshButton.disabled = false;
+                    }, 1000);
+                }
+
+            } catch (error) {
+                console.error('Error loading employees:', error);
+                showNotification('Failed to load employees', 'error');
+                
+                // Restore refresh button on error
+                const refreshButton = document.getElementById('refresh-employees');
+                if (refreshButton) {
+                    refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                    refreshButton.disabled = false;
+                }
+            }
+        }
+
+        // Function to update just the data in an existing card
+        function updateEmployeeCardData(card, employee, activeBreak, totals) {
+            const now = new Date();
+            
+            // Update status
+            const statusIndicator = card.querySelector('.status-indicator');
+            if (statusIndicator) {
+                statusIndicator.className = `status-indicator status-${employee.status}`;
+                statusIndicator.innerHTML = `
+                    <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                    ${formatStatus(employee.status)}
+                `;
+            }
+
+            // Update break timers and progress bars
+            if (activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                if (employee.status === 'coffee-break') {
+                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 30 - elapsedMinutes);
+                    const progress = ((30 - remainingMinutes) / 30) * 100;
+                    
+                    const progressBar = card.querySelector('.coffee-progress');
+                    const timeDisplay = card.querySelector('.coffee-time');
+                    if (progressBar) progressBar.style.width = `${Math.min(100, progress)}%`;
+                    if (timeDisplay) timeDisplay.textContent = `${remainingMinutes}m left`;
+                } else if (employee.status === 'lunch-break') {
+                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 40 - elapsedMinutes);
+                    const progress = ((40 - remainingMinutes) / 40) * 100;
+                    
+                    const progressBar = card.querySelector('.lunch-progress');
+                    const timeDisplay = card.querySelector('.lunch-time');
+                    if (progressBar) progressBar.style.width = `${Math.min(100, progress)}%`;
+                    if (timeDisplay) timeDisplay.textContent = `${remainingMinutes}m left`;
+                }
+            }
+
+            // Update statistics
+            const readyTime = card.querySelector('.ready-time');
+            const coffeeTime = card.querySelector('.coffee-total');
+            const lunchTime = card.querySelector('.lunch-total');
+            
+            if (readyTime) readyTime.textContent = formatDurationShort(totals.totalReadyTime);
+            if (coffeeTime) coffeeTime.textContent = formatDurationShort(totals.totalCoffeeTime);
+            if (lunchTime) lunchTime.textContent = formatDurationShort(totals.totalLunchTime);
+
+            // Update login time
+            const targetLoginMinutes = 8 * 60 + 30;
+            const loginProgress = (totals.totalLoginTime / targetLoginMinutes) * 100;
+            const remainingLoginTime = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+            
+            const loginProgressBar = card.querySelector('.login-progress');
+            const loginTimeDisplay = card.querySelector('.login-time');
+            
+            if (loginProgressBar) loginProgressBar.style.width = `${Math.min(100, loginProgress)}%`;
+            if (loginTimeDisplay) {
+                const hours = Math.floor(remainingLoginTime / 60);
+                const minutes = remainingLoginTime % 60;
+                loginTimeDisplay.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+            }
+        }
+
+        // Similar function for table rows
+        function updateEmployeeRowData(row, employee, activeBreak, totals) {
+            // Similar to updateEmployeeCardData but for table row elements
+            const now = new Date();
+            
+            // Update status
+            const statusIndicator = row.querySelector('.status-indicator');
+            if (statusIndicator) {
+                statusIndicator.className = `status-indicator status-${employee.status}`;
+                statusIndicator.innerHTML = `
+                    <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                    ${formatStatus(employee.status)}
+                `;
+            }
+
+            // Update break timers and progress bars
+            if (activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                if (employee.status === 'coffee-break') {
+                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 30 - elapsedMinutes);
+                    const progress = ((30 - remainingMinutes) / 30) * 100;
+                    
+                    const progressBar = row.querySelector('.coffee-progress');
+                    const timeDisplay = row.querySelector('.coffee-time');
+                    if (progressBar) progressBar.style.width = `${Math.min(100, progress)}%`;
+                    if (timeDisplay) timeDisplay.textContent = `${remainingMinutes}m left`;
+                } else if (employee.status === 'lunch-break') {
+                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 40 - elapsedMinutes);
+                    const progress = ((40 - remainingMinutes) / 40) * 100;
+                    
+                    const progressBar = row.querySelector('.lunch-progress');
+                    const timeDisplay = row.querySelector('.lunch-time');
+                    if (progressBar) progressBar.style.width = `${Math.min(100, progress)}%`;
+                    if (timeDisplay) timeDisplay.textContent = `${remainingMinutes}m left`;
+                }
+            }
+
+            // Update time in status
+            const statusDuration = row.querySelector('.status-duration');
+            if (statusDuration) {
+                const startTime = new Date(employee.updated_at);
+                const duration = Math.floor((now - startTime) / 1000);
+                const hours = Math.floor(duration / 3600);
+                const minutes = Math.floor((duration % 3600) / 60);
+                const seconds = duration % 60;
+                statusDuration.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Update statistics
+            const readyTime = row.querySelector('.ready-time');
+            const coffeeTime = row.querySelector('.coffee-total');
+            const lunchTime = row.querySelector('.lunch-total');
+            
+            if (readyTime) readyTime.textContent = formatDurationShort(totals.totalReadyTime);
+            if (coffeeTime) coffeeTime.textContent = formatDurationShort(totals.totalCoffeeTime);
+            if (lunchTime) lunchTime.textContent = formatDurationShort(totals.totalLunchTime);
+
+            // Update login time
+            const targetLoginMinutes = 8 * 60 + 30;
+            const loginProgress = (totals.totalLoginTime / targetLoginMinutes) * 100;
+            const remainingLoginTime = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+            
+            const loginProgressBar = row.querySelector('.login-progress');
+            const loginTimeDisplay = row.querySelector('.login-time');
+            
+            if (loginProgressBar) loginProgressBar.style.width = `${Math.min(100, loginProgress)}%`;
+            if (loginTimeDisplay) {
+                const hours = Math.floor(remainingLoginTime / 60);
+                const minutes = remainingLoginTime % 60;
+                loginTimeDisplay.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+            }
+        }
+
+        // Improved setupSmoothUpdates function
+        function setupSmoothUpdates() {
+            // Update status timers every second
+            setInterval(() => {
+                document.querySelectorAll('[id^="status-duration-"]').forEach(el => {
+                    const encodedEmail = el.id.replace('status-duration-', '');
+                    const employee = document.querySelector(`[data-email="${decodeEmailForSelector(encodedEmail)}"]`);
+                    if (employee) {
+                        const startTimeStr = employee.getAttribute('data-status-time');
+                        if (startTimeStr) {
+                            const startTime = new Date(startTimeStr);
+                            const now = new Date();
+                            const diff = Math.floor((now - startTime) / 1000);
+                            const hours = Math.floor(diff / 3600);
+                            const minutes = Math.floor((diff % 3600) / 60);
+                            const seconds = diff % 60;
+                            el.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        }
+                    }
+                });
+            }, 1000);
+
+            // Update break times and loading bars every 3 seconds for smoother updates
+            setInterval(async () => {
+                try {
+                    // Get active breaks in one call
+                    const { data: activeBreaks } = await supabase
+                        .from('employee_breaks')
+                        .select('*')
+                        .is('end_time', null);
+                        
+                    // Map breaks by email for quick access
+                    const breaksByEmail = new Map(activeBreaks.map(break_ => [break_.employee_email, break_]));
+                    
+                    // Get current employee data
+                    const { data: employees } = await supabase
+                        .from('requests_users')
+                        .select('*')
+                        .eq('role', 'back-office');
+                        
+                    // Update each employee's timers
+                    employees.forEach(employee => {
+                        const activeBreak = breaksByEmail.get(employee.email);
+                        // Use enhanced function with direct DOM manipulation
+                        updateBreakProgressBars(employee, activeBreak);
+                    });
+                } catch (error) {
+                    console.error('Error updating timers:', error);
+                }
+            }, 2000); // Update every 2 seconds for more responsive updates
+            
+            // Full refresh every 30 seconds but maintain element state
+            setInterval(async () => {
+                try {
+                    // Get current status filter
+                    const statusFilter = document.getElementById('employee-status-filter').value;
+                    
+                    // Get all data in parallel
+                    const [employeesResponse, breaksResponse, historyResponse] = await Promise.all([
+                        supabase.from('requests_users')
+                            .select('*')
+                            .eq('role', 'back-office')
+                            .order('assignee'),
+                        supabase.from('employee_breaks')
+                            .select('*')
+                            .is('end_time', null),
+                        supabase.from('employee_status_history')
+                            .select('*')
+                            .gte('created_at', new Date().toISOString().split('T')[0])
+                    ]);
+                    
+                    // Process employees data
+                    const employees = employeesResponse.data;
+                    const breaksByEmail = new Map(breaksResponse.data.map(break_ => [break_.employee_email, break_]));
+                    
+                    // Update all employees with new data
+                    employees.forEach(employee => {
+                        const activeBreak = breaksByEmail.get(employee.email);
+                        updateBreakProgressBars(employee, activeBreak);
+                    });
+                    
+                    // Update statistics
+                    loadStatistics();
+                } catch (error) {
+                    console.error('Error in full refresh:', error);
+                }
+            }, 30000);
+        }
+
+        // Add a more direct DOM manipulation function for break timers
+        function updateBreakProgressBars(employee, activeBreak) {
+            if (!employee || !employee.email) return;
+            
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            const now = new Date();
+            
+            // Get total times to show proper progress even when not on break
+            calculateTotalTimeToday(employee.email).then(totals => {
+                const coffeeProgressElements = document.querySelectorAll(`.coffee-progress-${encodedEmail}`);
+                const coffeeTimeElements = document.querySelectorAll(`.coffee-time-${encodedEmail}`);
+                
+                // Check if currently on coffee break
+                if (employee.status === 'coffee-break' && activeBreak) {
+                    const startTime = new Date(activeBreak.start_time);
+                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 30 - elapsedMinutes);
+                    const progress = ((30 - remainingMinutes) / 30) * 100;
+                    
+                    // Apply changes to all matching elements
+                    coffeeProgressElements.forEach(el => {
+                        el.style.width = `${Math.min(100, progress)}%`;
+                        el.getBoundingClientRect(); // Force reflow
+                    });
+                    
+                    coffeeTimeElements.forEach(el => {
+                        el.textContent = `${remainingMinutes}m left`;
+                    });
+                } else {
+                    // Show used coffee time even when not on break
+                    const coffeeTimeUsed = totals.totalCoffeeTime;
+                    const coffeeTimeLimit = 30; // 30 minutes limit
+                    const coffeeProgress = (coffeeTimeUsed / coffeeTimeLimit) * 100;
+                    const coffeeRemaining = Math.max(0, coffeeTimeLimit - coffeeTimeUsed);
+                    
+                    coffeeProgressElements.forEach(el => {
+                        el.style.width = `${Math.min(100, coffeeProgress)}%`;
+                    });
+                    
+                    coffeeTimeElements.forEach(el => {
+                        el.textContent = `${coffeeRemaining}m left`;
+                    });
+                }
+                
+                // Update lunch break progress (similar approach)
+                const lunchProgressElements = document.querySelectorAll(`.lunch-progress-${encodedEmail}`);
+                const lunchTimeElements = document.querySelectorAll(`.lunch-time-${encodedEmail}`);
+                
+                if (employee.status === 'lunch-break' && activeBreak) {
+                    const startTime = new Date(activeBreak.start_time);
+                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                    const remainingMinutes = Math.max(0, 40 - elapsedMinutes);
+                    const progress = ((40 - remainingMinutes) / 40) * 100;
+                    
+                    lunchProgressElements.forEach(el => {
+                        el.style.width = `${Math.min(100, progress)}%`;
+                        el.getBoundingClientRect(); // Force reflow
+                    });
+                    
+                    lunchTimeElements.forEach(el => {
+                        el.textContent = `${remainingMinutes}m left`;
+                    });
+                } else {
+                    // Show used lunch time even when not on break
+                    const lunchTimeUsed = totals.totalLunchTime;
+                    const lunchTimeLimit = 40; // 40 minutes limit
+                    const lunchProgress = (lunchTimeUsed / lunchTimeLimit) * 100;
+                    const lunchRemaining = Math.max(0, lunchTimeLimit - lunchTimeUsed);
+                    
+                    lunchProgressElements.forEach(el => {
+                        el.style.width = `${Math.min(100, lunchProgress)}%`;
+                    });
+                    
+                    lunchTimeElements.forEach(el => {
+                        el.textContent = `${lunchRemaining}m left`;
+                    });
+                }
+                
+                // Also update login time progress
+                updateLoginTimeProgress(employee);
+            }).catch(error => {
+                console.error('Error updating break progress bars:', error);
+            });
+        }
+
+        // Add a separate function to update login time progress
+        function updateLoginTimeProgress(employee) {
+            if (!employee || !employee.email) return;
+            
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            
+            calculateTotalTimeToday(employee.email).then(totals => {
+                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours
+                const progress = (totals.totalLoginTime / targetLoginMinutes) * 100;
+                const remainingLoginMinutes = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+                
+                // Update all login progress bar elements
+                document.querySelectorAll(`.login-progress-${encodedEmail}`).forEach(el => {
+                    el.style.width = `${Math.min(100, progress)}%`;
+                });
+                
+                // Update all login time elements with consistent format
+                document.querySelectorAll(`.login-time-${encodedEmail}`).forEach(el => {
+                    const hours = Math.floor(remainingLoginMinutes / 60);
+                    const minutes = remainingLoginMinutes % 60;
+                    // Use consistent format "Xh XXm left" instead of "X:XXh left"
+                    el.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+                });
+                
+                // Update stats displays
+                document.querySelectorAll(`.ready-time-${encodedEmail}`).forEach(el => {
+                    el.textContent = formatDurationShort(totals.totalReadyTime);
+                });
+                
+                document.querySelectorAll(`.coffee-total-${encodedEmail}`).forEach(el => {
+                    el.textContent = formatDurationShort(totals.totalCoffeeTime);
+                });
+                
+                document.querySelectorAll(`.lunch-total-${encodedEmail}`).forEach(el => {
+                    el.textContent = formatDurationShort(totals.totalLunchTime);
+                });
+            }).catch(error => {
+                console.error('Error updating login time progress:', error);
+            });
+        }
+
+        // Helper function to decode email selector
+        function decodeEmailForSelector(encodedEmail) {
+            return encodedEmail.replace(/_/g, (match, offset) => {
+                if (offset === encodedEmail.indexOf('_')) return '@';
+                return '.';
+            });
+        }
+
+        // Add this new function to update just the time in status
+        function updateTimeInStatus(employee) {
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            const statusDuration = document.querySelector(`#status-duration-${encodedEmail}`);
+            
+            if (statusDuration) {
+                const startTime = new Date(employee.updated_at);
+                const now = new Date();
+                const duration = Math.floor((now - startTime) / 1000);
+                const hours = Math.floor(duration / 3600);
+                const minutes = Math.floor((duration % 3600) / 60);
+                const seconds = duration % 60;
+                statusDuration.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Update login time progress
+            calculateTotalTimeToday(employee.email).then(totals => {
+                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours in minutes
+                const progress = (totals.totalLoginTime / targetLoginMinutes) * 100;
+                const remainingMinutes = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+                
+                const loginProgressBar = document.querySelector(`.login-progress-${encodedEmail}`);
+                const loginTimeDisplay = document.querySelector(`.login-time-${encodedEmail}`);
+                
+                if (loginProgressBar) {
+                    loginProgressBar.style.width = `${Math.min(100, progress)}%`;
+                }
+                if (loginTimeDisplay) {
+                    const hours = Math.floor(remainingMinutes / 60);
+                    const minutes = remainingMinutes % 60;
+                    // Use consistent format "Xh XXm left"
+                    loginTimeDisplay.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+                }
+            });
+        }
+
+        // Add this function to sort employees based on the selected criteria
+        function sortEmployees(employees, sortOrder) {
+            if (sortOrder === 'break') {
+                return employees.sort((a, b) => {
+                    const statusOrder = {
+                        'lunch-break': 1,
+                        'coffee-break': 2,
+                        'ready': 3,
+                        'offline': 4
+                    };
+                    return statusOrder[a.status] - statusOrder[b.status] || a.assignee.localeCompare(b.assignee);
+                });
+            } else if (sortOrder === 'ready') {
+                return employees.sort((a, b) => {
+                    const statusOrder = {
+                        'ready': 1,
+                        'lunch-break': 2,
+                        'coffee-break': 3,
+                        'offline': 4
+                    };
+                    return statusOrder[a.status] - statusOrder[b.status] || a.assignee.localeCompare(b.assignee);
+                });
+            } else if (sortOrder === 'alpha') {
+                return employees.sort((a, b) => a.assignee.localeCompare(b.assignee));
+            }
+            return employees;
+        }
+
+        // Add an event listener for the sort order dropdown
+        document.addEventListener('DOMContentLoaded', () => {
+            // Existing initialization code...
+            
+            // Add sort order change event
+            document.getElementById('employee-sort-order').addEventListener('change', loadEmployees);
+        });
+
+        // Add these helper functions after the loadEmployees function
+        function createEmployeeCardHTML(employee, encodedEmail, totals) {
+            // Calculate remaining times
+            const coffeeTimeLimit = 30;
+            const lunchTimeLimit = 40;
+            const coffeeRemaining = Math.max(0, coffeeTimeLimit - totals.totalCoffeeTime);
+            const lunchRemaining = Math.max(0, lunchTimeLimit - totals.totalLunchTime);
+            
+            // Calculate login time remaining
+            const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours
+            const loginRemaining = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+            const loginHours = Math.floor(loginRemaining / 60);
+            const loginMinutes = loginRemaining % 60;
+            
+            return `
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">${employee.assignee}</h3>
+                        <p class="text-sm text-gray-500">${employee.email}</p>
+                    </div>
+                    <div class="status-dropdown">
+                        <span class="status-indicator status-${employee.status} cursor-pointer" onclick="toggleStatusDropdown(this)">
+                            <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                            ${formatStatus(employee.status)}
+                        </span>
+                        <div class="status-dropdown-content">
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'ready')">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                Ready
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
+                                <i class="fas fa-coffee text-orange-500"></i>
+                                Coffee Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
+                                <i class="fas fa-utensils text-red-500"></i>
+                                Lunch Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'offline')">
+                                <i class="fas fa-power-off text-gray-500"></i>
+                                Offline
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Coffee Break (30 min limit)</span>
+                            <span class="coffee-time-${encodedEmail}">${coffeeRemaining}m left</span>
+                        </div>
+                        <div class="break-timer">
+                            <div class="coffee-progress-${encodedEmail} h-full" style="width: ${Math.min(100, (totals.totalCoffeeTime/coffeeTimeLimit)*100)}%;"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Used: ${formatDurationShort(totals.totalCoffeeTime)} of 30m</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Lunch Break (40 min limit)</span>
+                            <span class="lunch-time-${encodedEmail}">${lunchRemaining}m left</span>
+                        </div>
+                        <div class="break-timer">
+                            <div class="lunch-progress-${encodedEmail} h-full" style="width: ${Math.min(100, (totals.totalLunchTime/lunchTimeLimit)*100)}%;"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Used: ${formatDurationShort(totals.totalLunchTime)} of 40m</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Login Time (8:30h target)</span>
+                            <span class="login-time-${encodedEmail}">${loginHours}h ${loginMinutes.toString().padStart(2, '0')}m left</span>
+                        </div>
+                        <div class="break-timer">
+                            <div class="login-progress-${encodedEmail} h-full" style="width: ${Math.min(100, (totals.totalLoginTime/(8*60+30))*100)}%;"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-2">
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500">Ready Time</p>
+                            <p class="text-xl font-semibold ready-time-${encodedEmail}">${formatDurationShort(totals.totalReadyTime)}</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500">Break Time</p>
+                            <p class="text-xl font-semibold">
+                                <span class="coffee-total-${encodedEmail}">${formatDurationShort(totals.totalCoffeeTime)}</span> / 
+                                <span class="lunch-total-${encodedEmail}">${formatDurationShort(totals.totalLunchTime)}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button onclick="showStatusHistory('${employee.email}')" class="btn btn-secondary">
+                        <i class="fas fa-history mr-2"></i>
+                        Status History
+                    </button>
+                    <button onclick="resetEmployeeBreaks('${employee.email}')" class="btn btn-danger">
+                        <i class="fas fa-redo-alt mr-2"></i>
+                        Reset Breaks
+                    </button>
+                </div>
+            `;
+        }
+
+        function createEmployeeRowHTML(employee, encodedEmail, totals) {
+            // Calculate remaining times for hidden elements
+            const coffeeTimeLimit = 30;
+            const lunchTimeLimit = 40;
+            const coffeeRemaining = Math.max(0, coffeeTimeLimit - totals.totalCoffeeTime);
+            const lunchRemaining = Math.max(0, lunchTimeLimit - totals.totalLunchTime);
+            
+            // Calculate login time remaining
+            const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours
+            const loginRemaining = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
+            const loginHours = Math.floor(loginRemaining / 60);
+            const loginMinutes = loginRemaining % 60;
+            
+            return `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="font-medium text-gray-900 truncate max-w-[180px]" title="${employee.assignee}">${employee.assignee}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="status-dropdown relative">
+                        <span class="status-indicator status-${employee.status} cursor-pointer inline-flex items-center px-4 py-2" onclick="toggleStatusDropdown(this)">
+                            <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
+                            ${formatStatus(employee.status)}
+                        </span>
+                        <div class="status-dropdown-content">
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'ready')">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                Ready
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
+                                <i class="fas fa-coffee text-orange-500"></i>
+                                Coffee Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
+                                <i class="fas fa-utensils text-red-500"></i>
+                                Lunch Break
+                            </div>
+                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'offline')">
+                                <i class="fas fa-power-off text-gray-500"></i>
+                                Offline
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-coffee text-orange-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden break-timer">
+                                <div class="coffee-progress-${encodedEmail} h-full" style="width: ${Math.min(100, (totals.totalCoffeeTime/coffeeTimeLimit)*100)}%;"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">${totals.totalCoffeeTime}/30m</span>
+                            <span class="hidden coffee-time-${encodedEmail}">${coffeeRemaining}m left</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-utensils text-red-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden break-timer">
+                                <div class="lunch-progress-${encodedEmail} h-full" style="width: ${Math.min(100, (totals.totalLunchTime/lunchTimeLimit)*100)}%;"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">${totals.totalLunchTime}/40m</span>
+                            <span class="hidden lunch-time-${encodedEmail}">${lunchRemaining}m left</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-clock text-blue-500 w-4"></i>
+                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden break-timer">
+                                <div class="login-progress-${encodedEmail} h-full" style="width: ${Math.min(100, (totals.totalLoginTime/(8*60+30))*100)}%;"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">${totals.totalLoginTime}/${8*60+30}m</span>
+                            <span class="hidden login-time-${encodedEmail}">${loginHours}h ${loginMinutes.toString().padStart(2, '0')}m left</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div id="status-duration-${encodedEmail}" class="text-sm font-medium text-gray-900">00:00:00</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Ready: <span class="font-medium ready-time-${encodedEmail}">${formatDurationShort(totals.totalReadyTime)}</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-coffee text-orange-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Coffee: <span class="font-medium coffee-total-${encodedEmail}">${formatDurationShort(totals.totalCoffeeTime)}</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-utensils text-red-500 w-4"></i>
+                            <span class="text-sm text-gray-600">Lunch: <span class="font-medium lunch-total-${encodedEmail}">${formatDurationShort(totals.totalLunchTime)}</span></span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <div class="flex items-center justify-end space-x-2">
+                        <button onclick="showStatusHistory('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200" title="Status History">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button onclick="resetEmployeeBreaks('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-200" title="Reset Breaks">
+                            <i class="fas fa-redo-alt"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+        }
+
+        // Add the missing startStatusTimer function after updateBreakProgressBars
+        function startStatusTimer(employee) {
+            const encodedEmail = encodeEmailForSelector(employee.email);
+            const startTime = new Date(employee.updated_at);
+            
+            // Update immediately
+            updateStatusTimerDisplay(encodedEmail, startTime);
+            
+            // Then update every second
+            const timerId = setInterval(() => {
+                updateStatusTimerDisplay(encodedEmail, startTime);
+            }, 1000);
+            
+            // Store timer ID to clean up later if needed
+            if (!window.statusTimers) window.statusTimers = {};
+            if (window.statusTimers[encodedEmail]) {
+                clearInterval(window.statusTimers[encodedEmail]);
+            }
+            window.statusTimers[encodedEmail] = timerId;
+        }
+
+        // Function to update status timer display
+        function updateStatusTimerDisplay(encodedEmail, startTime) {
+            const statusDurationElements = document.querySelectorAll(`#status-duration-${encodedEmail}`);
+            if (!statusDurationElements.length) return;
+            
+            const now = new Date();
+            const diff = Math.floor((now - startTime) / 1000);
+            const hours = Math.floor(diff / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
+            
+            statusDurationElements.forEach(el => {
+                el.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            });
         }
     </script>
 </body>
