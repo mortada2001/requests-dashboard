@@ -614,6 +614,114 @@
             0% { left: -100%; }
             100% { left: 100%; }
         }
+
+        /* Ticket search and pagination styles */
+        #ticket-search {
+            min-width: 200px;
+            transition: all 0.2s ease;
+        }
+
+        #ticket-search:focus {
+            min-width: 240px;
+        }
+
+        .pagination-btn {
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:not(:disabled):hover {
+            background-color: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        /* Improved ticket card styles */
+        .ticket-card {
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .ticket-card.overdue {
+            border-left: 4px solid #ef4444;
+        }
+
+        .ticket-card.approaching {
+            border-left: 4px solid #f59e0b;
+        }
+
+        /* Style for the assigned_to info in ticket cards */
+        .ticket-assigned {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: 9999px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .ticket-assigned.bg-green-50 {
+            border-color: #d1fae5;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .ticket-assigned.bg-gray-50 {
+            border-color: #f3f4f6;
+            opacity: 0.9;
+        }
+
+        .ticket-assigned:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Ticket badge styles */
+        .ticket-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-new {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-in-progress {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-closed {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .badge-overdue {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -796,12 +904,19 @@
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-semibold text-gray-800">Ticket Monitoring</h2>
                         <div class="flex space-x-3">
+                            <input type="text" id="ticket-search" placeholder="Search by ticket ID" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <select id="ticket-status-filter" class="status-filter">
                                 <option value="all">All Statuses</option>
                                 <option value="new">New</option>
                                 <option value="in-progress">In Progress</option>
+                                <option value="closed">Closed</option>
                                 <option value="overdue">Overdue</option>
                                 <option value="approaching">Approaching SLA</option>
+                            </select>
+                            <select id="ticket-sort" class="status-filter">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="priority">By Priority</option>
                             </select>
                             <button id="refresh-tickets" class="refresh-btn">
                                 <i class="fas fa-sync-alt mr-2"></i>
@@ -809,23 +924,82 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- Tickets Statistics -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="bg-blue-100 p-2 rounded-full">
+                                    <i class="fas fa-ticket-alt text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600">Total Tickets</h3>
+                                    <p id="total-tickets-count" class="text-2xl font-bold text-gray-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="bg-blue-100 p-2 rounded-full">
+                                    <i class="fas fa-inbox text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600">New</h3>
+                                    <p id="new-tickets-count" class="text-2xl font-bold text-blue-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="bg-green-100 p-2 rounded-full">
+                                    <i class="fas fa-spinner text-green-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600">In Progress</h3>
+                                    <p id="in-progress-tickets-count" class="text-2xl font-bold text-green-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="bg-gray-100 p-2 rounded-full">
+                                    <i class="fas fa-check-circle text-gray-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600">Closed</h3>
+                                    <p id="closed-tickets-count" class="text-2xl font-bold text-gray-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="bg-red-100 p-2 rounded-full">
+                                    <i class="fas fa-exclamation-circle text-red-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600">Overdue</h3>
+                                    <p id="overdue-tickets-count" class="text-2xl font-bold text-red-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="tickets-container" class="space-y-4">
                         <!-- Tickets will be loaded here -->
                     </div>
 
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white p-4 rounded-lg shadow-sm">
-                            <h3 class="text-sm font-medium text-gray-600">New Tickets</h3>
-                            <p id="new-tickets" class="text-2xl font-bold text-blue-600">0</p>
+                    <!-- Pagination Controls -->
+                    <div class="mt-6 flex justify-between items-center">
+                        <div class="text-sm text-gray-600" id="tickets-pagination-info">
+                            Showing <span id="tickets-showing">0</span> of <span id="tickets-total">0</span> tickets
                         </div>
-                        <div class="bg-white p-4 rounded-lg shadow-sm">
-                            <h3 class="text-sm font-medium text-gray-600">In Progress</h3>
-                            <p id="in-progress-tickets" class="text-2xl font-bold text-green-600">0</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg shadow-sm">
-                            <h3 class="text-sm font-medium text-gray-600">Overdue</h3>
-                            <p id="overdue-tickets" class="text-2xl font-bold text-red-600">0</p>
+                        <div class="flex space-x-2">
+                            <button id="tickets-prev-page" class="pagination-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-left mr-1"></i> Previous
+                            </button>
+                            <button id="tickets-next-page" class="pagination-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next <i class="fas fa-chevron-right ml-1"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -957,13 +1131,23 @@
 
                 document.getElementById('active-employees').textContent = `${activeEmployees}/${totalEmployees}`;
 
-                // Get new tickets count
-                const { data: newTickets } = await supabase
+                // Get ticket counts
+                const { data: tickets } = await supabase
                     .from('tickets')
-                    .select('*')
-                    .eq('status', 'new');
+                    .select('*');
 
-                document.getElementById('new-tickets').textContent = newTickets?.length || 0;
+                const newTickets = tickets?.filter(t => t.status === 'new').length || 0;
+                const inProgressTickets = tickets?.filter(t => t.status === 'in-progress').length || 0;
+                const closedTickets = tickets?.filter(t => t.status === 'closed').length || 0;
+                const overdueTickets = tickets?.filter(t => isOverdue(t)).length || 0;
+
+                // Update both ticket count displays
+                document.getElementById('new-tickets').textContent = newTickets;
+                document.getElementById('new-tickets-count').textContent = newTickets;
+                document.getElementById('in-progress-tickets-count').textContent = inProgressTickets;
+                document.getElementById('closed-tickets-count').textContent = closedTickets;
+                document.getElementById('overdue-tickets-count').textContent = overdueTickets;
+                document.getElementById('total-tickets-count').textContent = tickets?.length || 0;
 
                 // Get employees on coffee and lunch breaks
                 const coffeeBreak = employees.filter(emp => emp.status === 'coffee-break').length;
@@ -1035,13 +1219,37 @@
                 currentUser = { ...session.user, ...userData };
                 document.getElementById('user-name').textContent = currentUser.assignee;
 
-                // Set up event listeners
+                // Set up all event listeners
                 document.getElementById('logout').addEventListener('click', handleLogout);
                 document.getElementById('refresh-employees').addEventListener('click', loadEmployees);
                 document.getElementById('refresh-tickets').addEventListener('click', loadTickets);
                 document.getElementById('employee-status-filter').addEventListener('change', loadEmployees);
                 document.getElementById('ticket-status-filter').addEventListener('change', loadTickets);
                 document.getElementById('employee-sort-order').addEventListener('change', loadEmployees);
+                
+                // Add ticket sorting and search event listeners
+                document.getElementById('ticket-sort')?.addEventListener('change', loadTickets);
+                document.getElementById('tickets-next-page')?.addEventListener('click', nextTicketsPage);
+                document.getElementById('tickets-prev-page')?.addEventListener('click', prevTicketsPage);
+                
+                // Add event listener for search
+                const searchInput = document.getElementById('ticket-search');
+                if (searchInput) {
+                    searchInput.addEventListener('keyup', (e) => {
+                        // Reset to first page when searching
+                        ticketsCurrentPage = 1;
+                        
+                        // If Enter key pressed or after a delay
+                        if (e.key === 'Enter') {
+                            loadTickets();
+                        } else {
+                            clearTimeout(searchInput.debounceTimer);
+                            searchInput.debounceTimer = setTimeout(() => {
+                                loadTickets();
+                            }, 500);
+                        }
+                    });
+                }
 
                 // Set up tab switching
                 document.querySelectorAll('.nav-link').forEach(link => {
@@ -2445,16 +2653,119 @@
         }
 
         // Load and display tickets
+        let ticketsCurrentPage = 1;
+        let ticketsPerPage = 100;
+        let ticketsTotal = 0;
+        let allTickets = [];
+
         async function loadTickets() {
             try {
+                // Show loading state
+                const refreshButton = document.getElementById('refresh-tickets');
+                if (refreshButton) {
+                    refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                    refreshButton.disabled = true;
+                }
+
+                // Get query params
                 const statusFilter = document.getElementById('ticket-status-filter')?.value || 'all';
+                const searchQuery = document.getElementById('ticket-search')?.value || '';
+                const sortOrder = document.getElementById('ticket-sort')?.value || 'newest';
+
+                // Fetch all tickets
                 const { data: tickets, error } = await supabase
                     .from('tickets')
                     .select('*')
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: sortOrder === 'oldest' });
 
                 if (error) throw error;
+                
+                // Fetch all users in one query
+                const { data: users } = await supabase
+                    .from('requests_users')
+                    .select('email, assignee');
+                
+                // Create a map of users by email for efficient lookup
+                const userMap = {};
+                if (users && users.length > 0) {
+                    users.forEach(user => {
+                        userMap[user.email] = user.assignee;
+                    });
+                }
+                
+                console.log("Found users:", Object.keys(userMap).length);
+                
+                // Enhance tickets with assignee information
+                const enhancedTickets = tickets.map(ticket => {
+                    // Get the assignee name from the user map if it exists
+                    const assigneeName = ticket.assigned_to && userMap[ticket.assigned_to] 
+                        ? userMap[ticket.assigned_to] 
+                        : (ticket.assigned_to ? ticket.assigned_to : 'Unassigned');
+                    
+                    return {
+                        ...ticket,
+                        assignee_name: assigneeName
+                    };
+                });
 
+                // Apply filters
+                allTickets = enhancedTickets || [];
+                
+                let filteredTickets = allTickets.filter(ticket => {
+                    // Apply status filter
+                    if (statusFilter === 'all') {
+                        // No status filter
+                    } else if (statusFilter === 'overdue') {
+                        if (!isOverdue(ticket)) return false;
+                    } else if (statusFilter === 'approaching') {
+                        if (!isApproachingSLA(ticket)) return false;
+                    } else if (ticket.status !== statusFilter) {
+                        return false;
+                    }
+
+                    // Apply search filter
+                    if (searchQuery) {
+                        const ticketId = String(ticket.ticket_id || '');
+                        if (!ticketId.includes(searchQuery)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                // Sort by priority if needed
+                if (sortOrder === 'priority') {
+                    filteredTickets.sort((a, b) => {
+                        // Priority: Overdue > Approaching SLA > New > In Progress > Closed
+                        const getPriority = (ticket) => {
+                            if (isOverdue(ticket)) return 1;
+                            if (isApproachingSLA(ticket)) return 2;
+                            if (ticket.status === 'new') return 3;
+                            if (ticket.status === 'in-progress') return 4;
+                            return 5; // closed or other
+                        };
+                        return getPriority(a) - getPriority(b);
+                    });
+                }
+
+                // Update counters
+                ticketsTotal = filteredTickets.length;
+                const totalPages = Math.ceil(ticketsTotal / ticketsPerPage);
+                
+                // Make sure current page is valid
+                if (ticketsCurrentPage > totalPages && totalPages > 0) {
+                    ticketsCurrentPage = totalPages;
+                } else if (ticketsCurrentPage < 1) {
+                    ticketsCurrentPage = 1;
+                }
+
+                // Apply pagination
+                const startIndex = (ticketsCurrentPage - 1) * ticketsPerPage;
+                const endIndex = Math.min(startIndex + ticketsPerPage, filteredTickets.length);
+                const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
+
+                // Update UI
                 const container = document.getElementById('tickets-container');
                 if (!container) {
                     console.error('Tickets container not found');
@@ -2464,153 +2775,191 @@
                 // Clear existing content
                 container.innerHTML = '';
 
-                if (!tickets || tickets.length === 0) {
+                if (filteredTickets.length === 0) {
                     container.innerHTML = `
                         <div class="text-center py-8">
                             <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
                             <p class="text-gray-500">No tickets found</p>
                         </div>
                     `;
-
-                    // Update counters
-                    updateTicketCounters([], statusFilter);
-                    return;
+                } else {
+                    // Create and append ticket cards
+                    paginatedTickets.forEach(ticket => {
+                        const card = createTicketCard(ticket);
+                        container.appendChild(card);
+                    });
                 }
 
-                const filteredTickets = tickets.filter(ticket => {
-                    if (statusFilter === 'all') return true;
-                    if (statusFilter === 'overdue') return isOverdue(ticket);
-                    if (statusFilter === 'approaching') return isApproachingSLA(ticket);
-                    return ticket.status === statusFilter;
-                });
+                // Update pagination controls
+                updatePaginationControls(filteredTickets.length, startIndex, endIndex);
 
-                // Create and append ticket cards
-                filteredTickets.forEach(ticket => {
-                    const card = createTicketCard(ticket);
-                    container.appendChild(card);
-                });
-
-                // Update counters
-                updateTicketCounters(tickets, statusFilter);
+                // Update statistics
+                updateTicketStatistics(allTickets);
 
             } catch (error) {
                 console.error('Error loading tickets:', error);
                 showNotification('Failed to load tickets', 'error');
+            } finally {
+                // Restore refresh button
+                const refreshButton = document.getElementById('refresh-tickets');
+                if (refreshButton) {
+                    refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                    refreshButton.disabled = false;
+                }
             }
         }
 
-        // Add this new helper function for creating ticket cards
+        // Update pagination controls
+        function updatePaginationControls(totalItems, startIndex, endIndex) {
+            document.getElementById('tickets-showing').textContent = totalItems > 0 ? `${startIndex + 1}-${endIndex}` : '0';
+            document.getElementById('tickets-total').textContent = totalItems;
+            
+            const prevButton = document.getElementById('tickets-prev-page');
+            const nextButton = document.getElementById('tickets-next-page');
+            
+            prevButton.disabled = ticketsCurrentPage <= 1;
+            nextButton.disabled = endIndex >= totalItems;
+        }
+
+        // Update ticket statistics
+        function updateTicketStatistics(tickets) {
+            const totalCount = tickets.length;
+            const newCount = tickets.filter(t => t.status === 'new').length;
+            const inProgressCount = tickets.filter(t => t.status === 'in-progress').length;
+            const closedCount = tickets.filter(t => t.status === 'closed').length;
+            const overdueCount = tickets.filter(t => isOverdue(t)).length;
+            
+            document.getElementById('total-tickets-count').textContent = totalCount;
+            document.getElementById('new-tickets-count').textContent = newCount;
+            document.getElementById('in-progress-tickets-count').textContent = inProgressCount;
+            document.getElementById('closed-tickets-count').textContent = closedCount;
+            document.getElementById('overdue-tickets-count').textContent = overdueCount;
+        }
+
+        // Create ticket card with assigned_to info
         function createTicketCard(ticket) {
             const card = document.createElement('div');
-            card.className = `bg-white rounded-lg shadow-sm p-4 mb-4 border-l-4 ${
-                isOverdue(ticket) ? 'border-red-500' :
-                isApproachingSLA(ticket) ? 'border-yellow-500' :
-                'border-blue-500'
-            }`;
+            const isTicketOverdue = isOverdue(ticket);
+            const isTicketApproaching = isApproachingSLA(ticket);
+            
+            let statusClass = '';
+            switch(ticket.status) {
+                case 'new': statusClass = 'badge-new'; break;
+                case 'in-progress': statusClass = 'badge-in-progress'; break;
+                case 'closed': statusClass = 'badge-closed'; break;
+                default: statusClass = 'badge-new';
+            }
+            
+            if (isTicketOverdue) {
+                statusClass = 'badge-overdue';
+            }
+            
+            const borderClass = isTicketOverdue ? 'border-red-500' : 
+                                isTicketApproaching ? 'border-yellow-500' : 
+                                'border-blue-500';
+            
+            card.className = `ticket-card border-l-4 ${borderClass}`;
+            
+            // Get assignee name from the attached user data
+            const isAssigned = !!ticket.assigned_to;
+            const assigneeName = ticket.assignee_name || 'Unassigned';
+            const assigneeIcon = isAssigned ? 'fa-user' : 'fa-user-slash';
+            const assigneeClass = isAssigned ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-500';
             
             card.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <div>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-3">
                         <h4 class="font-semibold text-gray-800">Ticket #${ticket.ticket_id}</h4>
-                        <p class="text-sm text-gray-500">Status: ${formatStatus(ticket.status)}</p>
+                        <span class="ticket-badge ${statusClass}">
+                            ${isTicketOverdue ? 'Overdue' : formatStatus(ticket.status)}
+                        </span>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <span class="text-sm text-gray-500">Created: ${formatDate(ticket.created_at)}</span>
-                        <span class="text-sm ${
-                            isOverdue(ticket) ? 'text-red-500' :
-                            isApproachingSLA(ticket) ? 'text-yellow-500' :
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs text-gray-500">Created: ${formatDate(ticket.created_at)}</span>
+                        <span class="text-xs font-medium ${
+                            isTicketOverdue ? 'text-red-500' :
+                            isTicketApproaching ? 'text-yellow-500' :
                             'text-gray-500'
                         }">
                             ${formatDuration(ticket.created_at)}
                         </span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <div class="ticket-assigned ${assigneeClass}">
+                        <i class="fas ${assigneeIcon} mr-1"></i>
+                        <span>${assigneeName}</span>
+                    </div>
+                    <div class="flex space-x-2">
                         ${ticket.status === 'new' ? `
                             <button onclick="startWorkingOnTicket('${ticket.ticket_id}')" 
                                 class="btn btn-sm btn-primary">
-                                <i class="fas fa-play mr-2"></i>
+                                <i class="fas fa-play mr-1"></i>
                                 Start Working
+                            </button>
+                        ` : ''}
+                        ${isTicketOverdue ? `
+                            <button onclick="sendReminder('${ticket.ticket_id}', '${ticket.assigned_to || ''}')" 
+                                class="btn btn-sm btn-danger">
+                                <i class="fas fa-bell mr-1"></i>
+                                Send Reminder
                             </button>
                         ` : ''}
                     </div>
                 </div>
+                ${ticket.description ? `
+                    <div class="mt-2 text-sm text-gray-600 border-t border-gray-100 pt-2">
+                        <p class="line-clamp-1">${ticket.description}</p>
+                    </div>
+                ` : ''}
             `;
             return card;
         }
 
-        // Add this new helper function for updating ticket counters
-        function updateTicketCounters(tickets, statusFilter) {
-            const newTickets = tickets.filter(t => t.status === 'new').length;
-            const inProgressTickets = tickets.filter(t => t.status === 'in-progress').length;
-            const overdueTickets = tickets.filter(t => isOverdue(t)).length;
-            
-            const elements = {
-                new: document.getElementById('new-tickets'),
-                inProgress: document.getElementById('in-progress-tickets'),
-                overdue: document.getElementById('overdue-tickets')
-            };
-
-            if (elements.new) elements.new.textContent = newTickets;
-            if (elements.inProgress) elements.inProgress.textContent = inProgressTickets;
-            if (elements.overdue) elements.overdue.textContent = overdueTickets;
+        // Update function to handle pagination
+        function nextTicketsPage() {
+            ticketsCurrentPage++;
+            loadTickets();
         }
 
-        // Helper functions for ticket handling
-        function isOverdue(ticket) {
-            if (!ticket.created_at) return false;
-            const created = new Date(ticket.created_at);
-            const now = new Date();
-            const hours = (now - created) / (1000 * 60 * 60);
-            return hours > 24; // Ticket is overdue if older than 24 hours
-        }
-
-        function isApproachingSLA(ticket) {
-            if (!ticket.created_at) return false;
-            const created = new Date(ticket.created_at);
-            const now = new Date();
-            const hours = (now - created) / (1000 * 60 * 60);
-            return hours > 20 && hours <= 24; // Warning if between 20-24 hours
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            return date.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        function formatDuration(dateString) {
-            if (!dateString) return 'N/A';
-            const start = new Date(dateString);
-            const now = new Date();
-            const hours = Math.floor((now - start) / (1000 * 60 * 60));
-            const minutes = Math.floor(((now - start) % (1000 * 60 * 60)) / (1000 * 60));
-            return `${hours}h ${minutes}m`;
-        }
-
-        // Function to start working on a ticket
-        async function startWorkingOnTicket(ticketId) {
-            try {
-                const { error } = await supabase
-                    .from('tickets')
-                    .update({ 
-                        status: 'in-progress',
-                        assigned_to: currentUser.email,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('ticket_id', ticketId);
-
-                if (error) throw error;
-
-                await loadTickets();
-                showNotification('Started working on ticket #' + ticketId, 'success');
-            } catch (error) {
-                console.error('Error starting work on ticket:', error);
-                showNotification('Failed to start working on ticket', 'error');
+        function prevTicketsPage() {
+            if (ticketsCurrentPage > 1) {
+                ticketsCurrentPage--;
+                loadTickets();
             }
         }
+
+        // Add event listeners for search and pagination
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add event listeners for pagination
+            document.getElementById('tickets-next-page')?.addEventListener('click', nextTicketsPage);
+            document.getElementById('tickets-prev-page')?.addEventListener('click', prevTicketsPage);
+            
+            // Add event listener for search
+            const searchInput = document.getElementById('ticket-search');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', (e) => {
+                    // Reset to first page when searching
+                    ticketsCurrentPage = 1;
+                    
+                    // If Enter key pressed or after a delay
+                    if (e.key === 'Enter') {
+                        loadTickets();
+                    } else {
+                        clearTimeout(searchInput.debounceTimer);
+                        searchInput.debounceTimer = setTimeout(() => {
+                            loadTickets();
+                        }, 500);
+                    }
+                });
+            }
+            
+            // Add event listener for sort change
+            document.getElementById('ticket-sort')?.addEventListener('change', () => {
+                ticketsCurrentPage = 1; // Reset to first page
+                loadTickets();
+            });
+        });
 
         // Add tab switching functionality
         document.addEventListener('DOMContentLoaded', () => {
@@ -3475,6 +3824,67 @@
                 el.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             });
         }
+
+        // Helper functions for ticket handling
+        function isOverdue(ticket) {
+            if (!ticket.created_at) return false;
+            const created = new Date(ticket.created_at);
+            const now = new Date();
+            const hours = (now - created) / (1000 * 60 * 60);
+            return hours > 24; // Ticket is overdue if older than 24 hours
+        }
+
+        function isApproachingSLA(ticket) {
+            if (!ticket.created_at) return false;
+            const created = new Date(ticket.created_at);
+            const now = new Date();
+            const hours = (now - created) / (1000 * 60 * 60);
+            return hours > 20 && hours <= 24; // Warning if between 20-24 hours
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatDuration(dateString) {
+            if (!dateString) return 'N/A';
+            const start = new Date(dateString);
+            const now = new Date();
+            const hours = Math.floor((now - start) / (1000 * 60 * 60));
+            const minutes = Math.floor(((now - start) % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Function to start working on a ticket
+        async function startWorkingOnTicket(ticketId) {
+            try {
+                const { error } = await supabase
+                    .from('tickets')
+                    .update({ 
+                        status: 'in-progress',
+                        assigned_to: currentUser.email,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('ticket_id', ticketId);
+
+                if (error) throw error;
+
+                await loadTickets();
+                showNotification('Started working on ticket #' + ticketId, 'success');
+            } catch (error) {
+                console.error('Error starting work on ticket:', error);
+                showNotification('Failed to start working on ticket', 'error');
+            }
+        }
+
+        // Add event listeners for search and pagination
     </script>
 </body>
 </html> 
