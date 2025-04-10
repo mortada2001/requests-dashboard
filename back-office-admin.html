@@ -1136,23 +1136,84 @@
 
                 document.getElementById('active-employees').textContent = `${activeEmployees}/${totalEmployees}`;
 
-                // Get ticket counts
-                const { data: tickets } = await supabase
+                // Directly count tickets by status to avoid the 1000 record limit
+                // Get new tickets count
+                const { count: newTickets, error: newTicketsError } = await supabase
                     .from('tickets')
-                    .select('*');
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'new');
+                
+                if (newTicketsError) {
+                    console.error('Error fetching new tickets count:', newTicketsError);
+                }
+                
+                // Get in-progress tickets count
+                const { count: inProgressTickets, error: inProgressError } = await supabase
+                    .from('tickets')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'in-progress');
+                
+                if (inProgressError) {
+                    console.error('Error fetching in-progress tickets count:', inProgressError);
+                }
+                
+                // Get closed tickets count
+                const { count: closedTickets, error: closedError } = await supabase
+                    .from('tickets')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'closed');
+                
+                if (closedError) {
+                    console.error('Error fetching closed tickets count:', closedError);
+                }
+                
+                // Get total tickets count
+                const { count: totalTickets, error: totalError } = await supabase
+                    .from('tickets')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (totalError) {
+                    console.error('Error fetching total tickets count:', totalError);
+                }
+                
+                console.log('New tickets count:', newTickets);
+                console.log('In progress tickets count:', inProgressTickets);
+                console.log('Closed tickets count:', closedTickets);
+                console.log('Total tickets count:', totalTickets);
 
-                const newTickets = tickets?.filter(t => t.status === 'new').length || 0;
-                const inProgressTickets = tickets?.filter(t => t.status === 'in-progress').length || 0;
-                const closedTickets = tickets?.filter(t => t.status === 'closed').length || 0;
-                const overdueTickets = tickets?.filter(t => isOverdue(t)).length || 0;
+                // Get overdue tickets (this is more complex as it needs to check timestamps)
+                const { data: recentTickets, error: recentError } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100); // Just get the recent ones to check
+
+                let overdueTickets = 0;
+                if (recentTickets) {
+                    overdueTickets = recentTickets.filter(t => isOverdue(t)).length;
+                } else if (recentError) {
+                    console.error('Error fetching tickets for overdue check:', recentError);
+                }
 
                 // Update both ticket count displays
-                document.getElementById('new-tickets').textContent = newTickets;
-                document.getElementById('new-tickets-count').textContent = newTickets;
-                document.getElementById('in-progress-tickets-count').textContent = inProgressTickets;
-                document.getElementById('closed-tickets-count').textContent = closedTickets;
+                const newTicketsElement = document.getElementById('new-tickets');
+                if (newTicketsElement) {
+                    newTicketsElement.textContent = newTickets || 0;
+                } else {
+                    console.error('Element with ID "new-tickets" not found');
+                }
+
+                const newTicketsCountElement = document.getElementById('new-tickets-count');
+                if (newTicketsCountElement) {
+                    newTicketsCountElement.textContent = newTickets || 0;
+                } else {
+                    console.error('Element with ID "new-tickets-count" not found');
+                }
+
+                document.getElementById('in-progress-tickets-count').textContent = inProgressTickets || 0;
+                document.getElementById('closed-tickets-count').textContent = closedTickets || 0;
                 document.getElementById('overdue-tickets-count').textContent = overdueTickets;
-                document.getElementById('total-tickets-count').textContent = tickets?.length || 0;
+                document.getElementById('total-tickets-count').textContent = totalTickets || 0;
 
                 // Get employees on coffee and lunch breaks
                 const coffeeBreak = employees.filter(emp => emp.status === 'coffee-break').length;
@@ -2591,15 +2652,30 @@
                 const searchQuery = document.getElementById('ticket-search')?.value || '';
                 const sortOrder = document.getElementById('ticket-sort')?.value || 'newest';
 
-                // Fetch all tickets
-                const { data: tickets, error } = await supabase
+                // Build query
+                let query = supabase
                     .from('tickets')
-                    .select('*')
-                    .order('created_at', { ascending: sortOrder === 'oldest' });
+                    .select('*');
+                
+                // Apply status filter directly to the database query when possible
+                if (statusFilter !== 'all' && statusFilter !== 'overdue' && statusFilter !== 'approaching') {
+                    query = query.eq('status', statusFilter);
+                }
+                
+                // Apply sorting
+                query = query.order('created_at', { ascending: sortOrder === 'oldest' });
+                
+                // Apply search filter if provided
+                if (searchQuery) {
+                    query = query.ilike('ticket_id', `%${searchQuery}%`);
+                }
+
+                // Execute the query
+                const { data: tickets, error, count } = await query;
 
                 if (error) throw error;
                 
-                // Fetch all users in one query
+                // Fetch all users in one query for display purposes
                 const { data: users } = await supabase
                     .from('requests_users')
                     .select('email, assignee');
@@ -2612,10 +2688,8 @@
                     });
                 }
                 
-                console.log("Found users:", Object.keys(userMap).length);
-                
                 // Enhance tickets with assignee information
-                const enhancedTickets = tickets.map(ticket => {
+                const enhancedTickets = tickets ? tickets.map(ticket => {
                     // Get the assignee name from the user map if it exists
                     const assigneeName = ticket.assigned_to && userMap[ticket.assigned_to] 
                         ? userMap[ticket.assigned_to] 
@@ -2625,33 +2699,19 @@
                         ...ticket,
                         assignee_name: assigneeName
                     };
-                });
+                }) : [];
 
-                // Apply filters
+                // Apply filters that couldn't be applied directly in the database query
                 allTickets = enhancedTickets || [];
                 
-                let filteredTickets = allTickets.filter(ticket => {
-                    // Apply status filter
-                    if (statusFilter === 'all') {
-                        // No status filter
-                    } else if (statusFilter === 'overdue') {
-                        if (!isOverdue(ticket)) return false;
-                    } else if (statusFilter === 'approaching') {
-                        if (!isApproachingSLA(ticket)) return false;
-                    } else if (ticket.status !== statusFilter) {
-                        return false;
-                    }
-
-                    // Apply search filter
-                    if (searchQuery) {
-                        const ticketId = String(ticket.ticket_id || '');
-                        if (!ticketId.includes(searchQuery)) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                });
+                let filteredTickets = allTickets;
+                
+                // Only apply client-side filtering if needed
+                if (statusFilter === 'overdue') {
+                    filteredTickets = allTickets.filter(ticket => isOverdue(ticket));
+                } else if (statusFilter === 'approaching') {
+                    filteredTickets = allTickets.filter(ticket => isApproachingSLA(ticket));
+                }
 
                 // Sort by priority if needed
                 if (sortOrder === 'priority') {
@@ -2712,8 +2772,8 @@
                 // Update pagination controls
                 updatePaginationControls(filteredTickets.length, startIndex, endIndex);
 
-                // Update statistics
-                updateTicketStatistics(allTickets);
+                // Update ticket table statistics
+                updateTicketStatistics(filteredTickets);
 
             } catch (error) {
                 console.error('Error loading tickets:', error);
@@ -2742,17 +2802,18 @@
 
         // Update ticket statistics
         function updateTicketStatistics(tickets) {
+            // These counts are just for the filtered/displayed tickets in the table
             const totalCount = tickets.length;
             const newCount = tickets.filter(t => t.status === 'new').length;
             const inProgressCount = tickets.filter(t => t.status === 'in-progress').length;
             const closedCount = tickets.filter(t => t.status === 'closed').length;
             const overdueCount = tickets.filter(t => isOverdue(t)).length;
             
-            document.getElementById('total-tickets-count').textContent = totalCount;
-            document.getElementById('new-tickets-count').textContent = newCount;
-            document.getElementById('in-progress-tickets-count').textContent = inProgressCount;
-            document.getElementById('closed-tickets-count').textContent = closedCount;
-            document.getElementById('overdue-tickets-count').textContent = overdueCount;
+            // Only update the table counts, not the main dashboard counts
+            // We'll keep the main counts managed by the loadStatistics function
+            document.getElementById('tickets-showing').textContent = totalCount > 0 ? 
+                `${Math.min(ticketsCurrentPage * ticketsPerPage, totalCount)}-${totalCount}` : '0';
+            document.getElementById('tickets-total').textContent = totalCount;
         }
 
         // Create ticket card with assigned_to info
