@@ -863,11 +863,13 @@
                                 <option value="coffee-break">Coffee Break</option>
                                 <option value="lunch-break">Lunch Break</option>
                                 <option value="offline">Offline</option>
+                                <option value="active">Active</option>
                             </select>
                             <select id="employee-sort-order" class="status-filter">
                                 <option value="break">Sort by Break</option>
                                 <option value="ready">Sort by Ready</option>
                                 <option value="alpha">Sort by Name A-Z</option>
+                                <option value="time-in-status">Sort by Time in Status</option>
                             </select>
                             <button id="refresh-employees" class="refresh-btn">
                                 <i class="fas fa-sync-alt"></i>
@@ -2980,6 +2982,8 @@
                 // Filter employees based on status
                 let filteredEmployees = statusFilter === 'all' 
                     ? employees 
+                    : statusFilter === 'active' 
+                    ? employees.filter(emp => ['ready', 'lunch-break', 'coffee-break'].includes(emp.status)) 
                     : employees.filter(emp => emp.status === statusFilter);
                     
                 console.log(`Filtered to ${filteredEmployees.length} employees based on status: ${statusFilter}`);
@@ -3536,6 +3540,14 @@
             } else if (sortOrder === 'alpha') {
                 const sorted = employees.sort((a, b) => a.assignee.localeCompare(b.assignee));
                 console.log('Employees after alpha sorting:', sorted.map(e => ({ name: e.assignee, status: e.status })));
+                return sorted;
+            } else if (sortOrder === 'time-in-status') {
+                const sorted = employees.sort((a, b) => {
+                    const timeA = new Date(a.updated_at);
+                    const timeB = new Date(b.updated_at);
+                    return timeA - timeB; // Newest first
+                });
+                console.log('Employees after time-in-status sorting:', sorted.map(e => ({ name: e.assignee, status: e.status })));
                 return sorted;
             }
             return employees;
