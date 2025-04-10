@@ -902,6 +902,54 @@
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        .status-popup {
+            position: fixed;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-width: 250px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .popup-header {
+            font-weight: 600;
+            color: #374151;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+        }
+
+        .popup-row:last-child {
+            border-bottom: none;
+        }
+
+        .popup-row span:first-child {
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .popup-row span:last-child {
+            color: #6b7280;
+        }
+
+        .stat-card {
+            position: relative;
+            
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -3190,7 +3238,134 @@
             }
         });
 
-       
+        // Function to fetch users by status
+        async function fetchUsersByStatus(status) {
+            try {
+                const { data: users, error } = await supabase
+                    .from('requests_users')
+                    .select('assignee, status, updated_at')
+                    .eq('status', status)
+                    .eq('role', 'back-office');
+
+                if (error) throw error;
+
+                return users.map(user => {
+                    const timeInStatus = calculateTimeInStatus(user.updated_at);
+                    return { name: user.assignee, time: timeInStatus };
+                });
+            } catch (error) {
+                console.error('Error fetching users by status:', error);
+                return [];
+            }
+        }
+
+        // Function to calculate time in status
+        function calculateTimeInStatus(updatedAt) {
+            const now = new Date();
+            const updatedTime = new Date(updatedAt);
+            const diffInSeconds = Math.floor((now - updatedTime) / 1000);
+            const hours = Math.floor(diffInSeconds / 3600);
+            const minutes = Math.floor((diffInSeconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Function to show popup
+        async function showStatusPopup(event, status, card) {
+            const popup = document.getElementById('status-popup');
+            const popupTitle = document.getElementById('popup-title');
+            const popupCount = document.getElementById('popup-count');
+            const popupContent = document.getElementById('popup-content');
+
+            // Get card position
+            const rect = card.getBoundingClientRect();
+
+            // Set popup position
+            popup.style.top = `${rect.bottom + window.scrollY + 10}px`;
+            popup.style.left = `${rect.left + window.scrollX}px`;
+
+            // Update popup title based on status
+            let statusTitle = '';
+            switch(status) {
+                case 'ready':
+                    statusTitle = 'Ready Users';
+                    break;
+                case 'coffee-break':
+                    statusTitle = 'Users on Coffee Break';
+                    break;
+                case 'lunch-break':
+                    statusTitle = 'Users on Lunch Break';
+                    break;
+                default:
+                    statusTitle = 'Users';
+            }
+            
+            popupTitle.textContent = statusTitle;
+
+            // Show loading state
+            popupContent.innerHTML = '<div class="text-center py-2"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            popup.style.display = 'block';
+
+            // Fetch and display users
+            const users = await fetchUsersByStatus(status);
+            popupCount.textContent = `(${users.length})`;
+
+            if (users.length === 0) {
+                popupContent.innerHTML = '<div class="text-center py-2 text-gray-500">No users found</div>';
+                return;
+            }
+
+            popupContent.innerHTML = users.map(user => `
+                <div class="popup-row">
+                    <span>${user.name}</span>
+                    <span>${user.time}</span>
+                </div>
+            `).join('');
+        }
+
+        // Function to hide popup
+        function hideStatusPopup() {
+            const popup = document.getElementById('status-popup');
+            popup.style.display = 'none';
+        }
+
+        // Function to setup status card hover events
+        function setupStatusCardHover() {
+            const readyCard = document.querySelector('.stat-card:nth-child(2)');
+            const coffeeBreakCard = document.querySelector('.stat-card:nth-child(3)');
+            const lunchBreakCard = document.querySelector('.stat-card:nth-child(4)');
+
+            if (readyCard) {
+                readyCard.addEventListener('mouseenter', (e) => showStatusPopup(e, 'ready', readyCard));
+                readyCard.addEventListener('mouseleave', hideStatusPopup);
+            }
+
+            if (coffeeBreakCard) {
+                coffeeBreakCard.addEventListener('mouseenter', (e) => showStatusPopup(e, 'coffee-break', coffeeBreakCard));
+                coffeeBreakCard.addEventListener('mouseleave', hideStatusPopup);
+            }
+
+            if (lunchBreakCard) {
+                lunchBreakCard.addEventListener('mouseenter', (e) => showStatusPopup(e, 'lunch-break', lunchBreakCard));
+                lunchBreakCard.addEventListener('mouseleave', hideStatusPopup);
+            }
+        }
+
+        // Initialize hover functionality when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setupStatusCardHover();
+            console.log('Status card hover functionality initialized');
+        });
+
+        // ... rest of your existing script ...
     </script>
+
+    <!-- Add this right before the closing body tag -->
+    <div id="status-popup" class="status-popup">
+        <div class="popup-header">
+            <span id="popup-title">Status Details</span>
+            <span id="popup-count"></span>
+        </div>
+        <div id="popup-content"></div>
+    </div>
 </body>
 </html> 
