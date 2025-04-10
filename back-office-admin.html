@@ -135,7 +135,7 @@
             min-width: 160px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
             border-radius: 0.5rem;
-            z-index: 1;
+            z-index: 1000;
             opacity: 0;
             transform: translateY(-10px);
             visibility: hidden;
@@ -1051,6 +1051,9 @@
             </div>
             <div class="px-6 pb-4">
                 <div class="mb-4">
+                    <label for="history-date" class="block text-sm font-medium text-gray-700 mb-1">
+                        Select date (shows data from 8AM to 8AM next day)
+                    </label>
                     <input type="date" id="history-date" class="form-input w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" onchange="refreshStatusHistory()">
                 </div>
                 <div class="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200 shadow-sm">
@@ -1498,66 +1501,103 @@
             return { totalReadyTime, totalCoffeeTime, totalLunchTime, totalLoginTime };
         }
 
-        // Update the updateBreakTimers function
-        function updateBreakTimers(employee, activeBreak, totals) {
-            if (!employee || !employee.email) return;
+        // Update the updateBreakTimers function to use encoded email
+        async function updateBreakTimers(employee, activeBreak, totals) {
+            try {
+                const encodedEmail = encodeEmailForSelector(employee.email);
+                
+                // Calculate the start of the "work day" (8 AM today or yesterday depending on current time)
+                const now = new Date();
+                const today8AM = new Date(now);
+                today8AM.setHours(8, 0, 0, 0);
 
-            const encodedEmail = encodeEmailForSelector(employee.email);
+                // If current time is before 8 AM, use yesterday's 8 AM as start time
+                const startTime = now < today8AM ? 
+                    new Date(today8AM.getTime() - 24 * 60 * 60 * 1000) : // Yesterday 8 AM
+                    today8AM; // Today 8 AM
+                
+                // Calculate break times
+                const { data: breaks, error } = await supabase
+                    .from('employee_breaks')
+                    .select('*')
+                    .eq('employee_email', employee.email)
+                    .gte('start_time', startTime.toISOString());
+
+                if (error) throw error;
+
+                // Calculate total coffee and lunch break time used today
+                let totalCoffeeTime = 0;
+                let totalLunchTime = 0;
+
+                breaks.forEach(breakRecord => {
+                    const start = new Date(breakRecord.start_time);
+                    const end = breakRecord.end_time ? new Date(breakRecord.end_time) : new Date();
+                    const durationMinutes = Math.round((end - start) / (1000 * 60));
+                    
+                    if (breakRecord.break_type === 'coffee-break') {
+                        totalCoffeeTime += durationMinutes;
+                    } else if (breakRecord.break_type === 'lunch-break') {
+                        totalLunchTime += durationMinutes;
+                    }
+                });
+
+                // Update current break timer if the employee is on a break
+                updateCurrentBreakTimer(employee, encodedEmail, activeBreak, totalCoffeeTime, totalLunchTime);
+                
+                // Update total times
+                await calculateTotalTimeToday(employee.email);
+
+            } catch (error) {
+                console.error('Error updating break timers:', error);
+            }
+        }
+
+        // Helper function to update the current break timer display
+        function updateCurrentBreakTimer(employee, encodedEmail, activeBreak, totalCoffeeTime, totalLunchTime) {
             const now = new Date();
-
-            // Update coffee break progress
+            const coffeeTimeLimit = 30; // 30 minutes for coffee break
+            const lunchTimeLimit = 40; // 40 minutes for lunch break
+            
+            // Update coffee break display
             const coffeeProgress = document.querySelector(`.coffee-progress-${encodedEmail}`);
             const coffeeTime = document.querySelector(`.coffee-time-${encodedEmail}`);
-            const coffeeTotal = document.querySelector(`.coffee-total-${encodedEmail}`);
-
+            
             if (employee.status === 'coffee-break' && activeBreak) {
                 const startTime = new Date(activeBreak.start_time);
-                const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
-                const remainingMinutes = Math.max(0, 30 - diffMinutes);
-                const progress = ((30 - remainingMinutes) / 30) * 100;
-
+                const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, coffeeTimeLimit - totalCoffeeTime);
+                const progress = (totalCoffeeTime / coffeeTimeLimit) * 100;
+                
                 if (coffeeProgress) coffeeProgress.style.width = `${Math.min(100, progress)}%`;
                 if (coffeeTime) coffeeTime.textContent = `${remainingMinutes}m left`;
             } else {
-                if (coffeeProgress) coffeeProgress.style.width = '0%';
-                if (coffeeTime) coffeeTime.textContent = '30m left';
+                // Still show used coffee time when not on break
+                const remainingMinutes = Math.max(0, coffeeTimeLimit - totalCoffeeTime);
+                const progress = (totalCoffeeTime / coffeeTimeLimit) * 100;
+                
+                if (coffeeProgress) coffeeProgress.style.width = `${Math.min(100, progress)}%`;
+                if (coffeeTime) coffeeTime.textContent = `${remainingMinutes}m left`;
             }
-
-            // Update lunch break progress
+            
+            // Update lunch break display
             const lunchProgress = document.querySelector(`.lunch-progress-${encodedEmail}`);
             const lunchTime = document.querySelector(`.lunch-time-${encodedEmail}`);
-            const lunchTotal = document.querySelector(`.lunch-total-${encodedEmail}`);
-
+            
             if (employee.status === 'lunch-break' && activeBreak) {
                 const startTime = new Date(activeBreak.start_time);
-                const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
-                const remainingMinutes = Math.max(0, 40 - diffMinutes);
-                const progress = ((40 - remainingMinutes) / 40) * 100;
-
+                const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, lunchTimeLimit - totalLunchTime);
+                const progress = (totalLunchTime / lunchTimeLimit) * 100;
+                
                 if (lunchProgress) lunchProgress.style.width = `${Math.min(100, progress)}%`;
                 if (lunchTime) lunchTime.textContent = `${remainingMinutes}m left`;
             } else {
-                if (lunchProgress) lunchProgress.style.width = '0%';
-                if (lunchTime) lunchTime.textContent = '40m left';
-            }
-
-            // Update total times
-            const readyTime = document.querySelector(`.ready-time-${encodedEmail}`);
-            if (readyTime) readyTime.textContent = formatDurationShort(totals.totalReadyTime);
-            if (coffeeTotal) coffeeTotal.textContent = formatDurationShort(totals.totalCoffeeTime);
-            if (lunchTotal) lunchTotal.textContent = formatDurationShort(totals.totalLunchTime);
-
-            // Update login time progress
-            const loginProgress = document.querySelector(`.login-progress-${encodedEmail}`);
-            const loginTime = document.querySelector(`.login-time-${encodedEmail}`);
-            
-            if (loginProgress && loginTime) {
-                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours in minutes
-                const progress = (totals.totalLoginTime / targetLoginMinutes) * 100;
-                const remainingTime = Math.max(0, targetLoginMinutes - totals.totalLoginTime);
-
-                loginProgress.style.width = `${Math.min(100, progress)}%`;
-                loginTime.textContent = formatDurationShort(remainingTime) + ' left';
+                // Still show used lunch time when not on break
+                const remainingMinutes = Math.max(0, lunchTimeLimit - totalLunchTime);
+                const progress = (totalLunchTime / lunchTimeLimit) * 100;
+                
+                if (lunchProgress) lunchProgress.style.width = `${Math.min(100, progress)}%`;
+                if (lunchTime) lunchTime.textContent = `${remainingMinutes}m left`;
             }
         }
 
@@ -1925,6 +1965,7 @@
 
         // Add this function to create table rows
         function createEmployeeTableRow(employee, activeBreak, totals) {
+            const encodedEmail = encodeEmailForSelector(employee.email);
             const row = document.createElement('tr');
             row.className = 'even:bg-gray-50 hover:bg-blue-50 transition-all duration-200';
             row.innerHTML = `
@@ -1962,42 +2003,42 @@
                         <div class="flex items-center gap-3">
                             <i class="fas fa-coffee text-orange-500 w-4"></i>
                             <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="coffee-progress-${employee.email} h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
+                                <div class="coffee-progress-${encodedEmail} h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-16 coffee-time-${employee.email}">30m left</span>
+                            <span class="text-sm text-gray-600 w-16 coffee-time-${encodedEmail}">30m left</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <i class="fas fa-utensils text-red-500 w-4"></i>
                             <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="lunch-progress-${employee.email} h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
+                                <div class="lunch-progress-${encodedEmail} h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-16 lunch-time-${employee.email}">40m left</span>
+                            <span class="text-sm text-gray-600 w-16 lunch-time-${encodedEmail}">40m left</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <i class="fas fa-clock text-blue-500 w-4"></i>
                             <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="login-progress-${employee.email} h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+                                <div class="login-progress-${encodedEmail} h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-16 login-time-${employee.email}">8:30h left</span>
+                            <span class="text-sm text-gray-600 w-16 login-time-${encodedEmail}">8:30h left</span>
                         </div>
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div id="status-duration-${employee.email}" class="text-sm font-medium text-gray-900">00:00:00</div>
+                    <div id="status-duration-${encodedEmail}" class="text-sm font-medium text-gray-900">00:00:00</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="space-y-2">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-check-circle text-green-500 w-4"></i>
-                            <span class="text-sm text-gray-600">Ready: <span class="font-medium ready-time-${employee.email}">0m</span></span>
+                            <span class="text-sm text-gray-600">Ready: <span class="font-medium ready-time-${encodedEmail}">0m</span></span>
                         </div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-coffee text-orange-500 w-4"></i>
-                            <span class="text-sm text-gray-600">Coffee: <span class="font-medium coffee-total-${employee.email}">0m</span></span>
+                            <span class="text-sm text-gray-600">Coffee: <span class="font-medium coffee-total-${encodedEmail}">0m</span></span>
                         </div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-utensils text-red-500 w-4"></i>
-                            <span class="text-sm text-gray-600">Lunch: <span class="font-medium lunch-total-${employee.email}">0m</span></span>
+                            <span class="text-sm text-gray-600">Lunch: <span class="font-medium lunch-total-${encodedEmail}">0m</span></span>
                         </div>
                     </div>
                 </td>
@@ -2221,18 +2262,21 @@
 
             try {
                 const selectedDate = document.getElementById('history-date').valueAsDate;
-                const startOfDay = new Date(selectedDate);
-                startOfDay.setHours(0, 0, 0, 0);
                 
-                const endOfDay = new Date(selectedDate);
-                endOfDay.setHours(23, 59, 59, 999);
+                // Set the start time to 8AM on the selected date
+                const startTime = new Date(selectedDate);
+                startTime.setHours(8, 0, 0, 0);
+                
+                // End time is 8AM the next day
+                const endTime = new Date(startTime);
+                endTime.setDate(endTime.getDate() + 1);
 
                 const { data: statusHistory, error } = await supabase
                     .from('employee_status_history')
                     .select('*')
                     .eq('employee_email', currentHistoryEmail)
-                    .gte('created_at', startOfDay.toISOString())
-                    .lte('created_at', endOfDay.toISOString())
+                    .gte('created_at', startTime.toISOString())
+                    .lt('created_at', endTime.toISOString())
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -2324,14 +2368,22 @@
         async function calculateTotalTimeToday(email) {
             try {
                 const encodedEmail = encodeEmailForSelector(email);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                
+                // Calculate the start of the "work day" (8 AM today or yesterday depending on current time)
+                const now = new Date();
+                const today8AM = new Date(now);
+                today8AM.setHours(8, 0, 0, 0);
+
+                // If current time is before 8 AM, use yesterday's 8 AM as start time
+                const startTime = now < today8AM ? 
+                    new Date(today8AM.getTime() - 24 * 60 * 60 * 1000) : // Yesterday 8 AM
+                    today8AM; // Today 8 AM
 
                 const { data: history, error } = await supabase
                     .from('employee_status_history')
                     .select('*')
                     .eq('employee_email', email)
-                    .gte('created_at', today.toISOString())
+                    .gte('created_at', startTime.toISOString())
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -2360,6 +2412,9 @@
                             break;
                         case 'lunch-break':
                             totalLunchTime += duration;
+                            totalLoginTime += duration;
+                            break;
+                        case 'task':
                             totalLoginTime += duration;
                             break;
                     }
@@ -2414,158 +2469,49 @@
             return email.replace(/[@.]/g, '_');
         }
 
-        // Update the createEmployeeTableRow function to use encoded email
-        function createEmployeeTableRow(employee, activeBreak, totals) {
-            const encodedEmail = encodeEmailForSelector(employee.email);
-            const row = document.createElement('tr');
-            row.className = 'even:bg-gray-50 hover:bg-blue-50 transition-all duration-200';
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="font-medium text-gray-900">${employee.assignee}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="status-dropdown relative">
-                        <span class="status-indicator status-${employee.status} cursor-pointer inline-flex items-center px-4 py-2" onclick="toggleStatusDropdown(this)">
-                            <i class="fas fa-${getStatusIcon(employee.status)} mr-2"></i>
-                            ${formatStatus(employee.status)}
-                        </span>
-                        <div class="status-dropdown-content">
-                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'ready')">
-                                <i class="fas fa-check-circle text-green-500"></i>
-                                Ready
-                            </div>
-                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'coffee-break')">
-                                <i class="fas fa-coffee text-orange-500"></i>
-                                Coffee Break
-                            </div>
-                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'lunch-break')">
-                                <i class="fas fa-utensils text-red-500"></i>
-                                Lunch Break
-                            </div>
-                            <div class="status-option" onclick="changeEmployeeStatus('${employee.email}', 'offline')">
-                                <i class="fas fa-power-off text-gray-500"></i>
-                                Offline
-                            </div>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-coffee text-orange-500 w-4"></i>
-                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="coffee-progress-${encodedEmail} h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <span class="text-sm text-gray-600 w-16 coffee-time-${encodedEmail}">30m left</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-utensils text-red-500 w-4"></i>
-                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="lunch-progress-${encodedEmail} h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <span class="text-sm text-gray-600 w-16 lunch-time-${encodedEmail}">40m left</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-clock text-blue-500 w-4"></i>
-                            <div class="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="login-progress-${encodedEmail} h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <span class="text-sm text-gray-600 w-16 login-time-${encodedEmail}">8:30h left</span>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div id="status-duration-${encodedEmail}" class="text-sm font-medium text-gray-900">00:00:00</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-check-circle text-green-500 w-4"></i>
-                            <span class="text-sm text-gray-600">Ready: <span class="font-medium ready-time-${encodedEmail}">0m</span></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-coffee text-orange-500 w-4"></i>
-                            <span class="text-sm text-gray-600">Coffee: <span class="font-medium coffee-total-${encodedEmail}">0m</span></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-utensils text-red-500 w-4"></i>
-                            <span class="text-sm text-gray-600">Lunch: <span class="font-medium lunch-total-${encodedEmail}">0m</span></span>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center gap-3">
-                        <button onclick="showStatusHistory('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200" title="Status History">
-                            <i class="fas fa-history"></i>
-                        </button>
-                        <button onclick="resetEmployeeBreaks('${employee.email}')" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-200" title="Reset Breaks">
-                            <i class="fas fa-redo-alt"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            return row;
-        }
-
         // Update the updateBreakTimers function to use encoded email
         async function updateBreakTimers(employee, activeBreak, totals) {
             try {
                 const encodedEmail = encodeEmailForSelector(employee.email);
+                
+                // Calculate the start of the "work day" (8 AM today or yesterday depending on current time)
+                const now = new Date();
+                const today8AM = new Date(now);
+                today8AM.setHours(8, 0, 0, 0);
+
+                // If current time is before 8 AM, use yesterday's 8 AM as start time
+                const startTime = now < today8AM ? 
+                    new Date(today8AM.getTime() - 24 * 60 * 60 * 1000) : // Yesterday 8 AM
+                    today8AM; // Today 8 AM
+                
                 // Calculate break times
                 const { data: breaks, error } = await supabase
                     .from('employee_breaks')
                     .select('*')
                     .eq('employee_email', employee.email)
-                    .is('end_time', null)
-                    .order('start_time', { ascending: false })
-                    .limit(1);
+                    .gte('start_time', startTime.toISOString());
 
                 if (error) throw error;
 
-                const currentBreak = breaks?.[0];
+                // Calculate total coffee and lunch break time used today
+                let totalCoffeeTime = 0;
+                let totalLunchTime = 0;
+
+                breaks.forEach(breakRecord => {
+                    const start = new Date(breakRecord.start_time);
+                    const end = breakRecord.end_time ? new Date(breakRecord.end_time) : new Date();
+                    const durationMinutes = Math.round((end - start) / (1000 * 60));
+                    
+                    if (breakRecord.break_type === 'coffee-break') {
+                        totalCoffeeTime += durationMinutes;
+                    } else if (breakRecord.break_type === 'lunch-break') {
+                        totalLunchTime += durationMinutes;
+                    }
+                });
+
+                // Update current break timer if the employee is on a break
+                updateCurrentBreakTimer(employee, encodedEmail, activeBreak, totalCoffeeTime, totalLunchTime);
                 
-                // Update coffee break progress
-                if (employee.status === 'coffee-break' && currentBreak) {
-                    const startTime = new Date(currentBreak.start_time);
-                    const now = new Date();
-                    const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
-                    const remainingMinutes = Math.max(0, 30 - diffMinutes);
-                    const progress = ((30 - remainingMinutes) / 30) * 100;
-
-                    const coffeeProgress = document.querySelector(`.coffee-progress-${encodedEmail}`);
-                    const coffeeTime = document.querySelector(`.coffee-time-${encodedEmail}`);
-
-                    if (coffeeProgress) coffeeProgress.style.width = `${Math.min(100, progress)}%`;
-                    if (coffeeTime) coffeeTime.textContent = `${remainingMinutes}m left`;
-                } else {
-                    const coffeeProgress = document.querySelector(`.coffee-progress-${encodedEmail}`);
-                    const coffeeTime = document.querySelector(`.coffee-time-${encodedEmail}`);
-
-                    if (coffeeProgress) coffeeProgress.style.width = '0%';
-                    if (coffeeTime) coffeeTime.textContent = '30m left';
-                }
-
-                // Update lunch break progress
-                if (employee.status === 'lunch-break' && currentBreak) {
-                    const startTime = new Date(currentBreak.start_time);
-                    const now = new Date();
-                    const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
-                    const remainingMinutes = Math.max(0, 40 - diffMinutes);
-                    const progress = ((40 - remainingMinutes) / 40) * 100;
-
-                    const lunchProgress = document.querySelector(`.lunch-progress-${encodedEmail}`);
-                    const lunchTime = document.querySelector(`.lunch-time-${encodedEmail}`);
-
-                    if (lunchProgress) lunchProgress.style.width = `${Math.min(100, progress)}%`;
-                    if (lunchTime) lunchTime.textContent = `${remainingMinutes}m left`;
-                } else {
-                    const lunchProgress = document.querySelector(`.lunch-progress-${encodedEmail}`);
-                    const lunchTime = document.querySelector(`.lunch-time-${encodedEmail}`);
-
-                    if (lunchProgress) lunchProgress.style.width = '0%';
-                    if (lunchTime) lunchTime.textContent = '40m left';
-                }
-
                 // Update total times
                 await calculateTotalTimeToday(employee.email);
 
@@ -2574,81 +2520,52 @@
             }
         }
 
-        // Update the calculateTotalTimeToday function to use encoded email
-        async function calculateTotalTimeToday(email) {
-            try {
-                const encodedEmail = encodeEmailForSelector(email);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const { data: history, error } = await supabase
-                    .from('employee_status_history')
-                    .select('*')
-                    .eq('employee_email', email)
-                    .gte('created_at', today.toISOString())
-                    .order('created_at', { ascending: true });
-
-                if (error) throw error;
-
-                let totalReadyTime = 0;
-                let totalCoffeeTime = 0;
-                let totalLunchTime = 0;
-                let totalLoginTime = 0;
-
-                history.forEach((record, index) => {
-                    const startTime = new Date(record.created_at);
-                    const endTime = index === history.length - 1 
-                        ? new Date() 
-                        : new Date(history[index + 1].created_at);
-                    
-                    const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
-
-                    switch (record.new_status) {
-                        case 'ready':
-                            totalReadyTime += duration;
-                            totalLoginTime += duration;
-                            break;
-                        case 'coffee-break':
-                            totalCoffeeTime += duration;
-                            totalLoginTime += duration;
-                            break;
-                        case 'lunch-break':
-                            totalLunchTime += duration;
-                            totalLoginTime += duration;
-                            break;
-                    }
-                });
-
-                // Update the stats display
-                const readyTimeElement = document.querySelector(`.ready-time-${encodedEmail}`);
-                const coffeeTimeElement = document.querySelector(`.coffee-total-${encodedEmail}`);
-                const lunchTimeElement = document.querySelector(`.lunch-total-${encodedEmail}`);
-
-                if (readyTimeElement) readyTimeElement.textContent = formatDurationShort(totalReadyTime);
-                if (coffeeTimeElement) coffeeTimeElement.textContent = formatDurationShort(totalCoffeeTime);
-                if (lunchTimeElement) lunchTimeElement.textContent = formatDurationShort(totalLunchTime);
-
-                // Update login time progress
-                const targetLoginMinutes = 8 * 60 + 30; // 8:30 hours in minutes
-                const loginProgress = (totalLoginTime / targetLoginMinutes) * 100;
-                const loginProgressElement = document.querySelector(`.login-progress-${encodedEmail}`);
-                const loginTimeElement = document.querySelector(`.login-time-${encodedEmail}`);
-
-                if (loginProgressElement) {
-                    loginProgressElement.style.width = `${Math.min(100, loginProgress)}%`;
-                }
-                if (loginTimeElement) {
-                    const remainingTime = Math.max(0, targetLoginMinutes - totalLoginTime);
-                    const hours = Math.floor(remainingTime / 60);
-                    const minutes = remainingTime % 60;
-                    // Use consistent format
-                    loginTimeElement.textContent = `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
-                }
-
-                return { totalReadyTime, totalCoffeeTime, totalLunchTime, totalLoginTime };
-            } catch (error) {
-                console.error('Error calculating total time:', error);
-                return { totalReadyTime: 0, totalCoffeeTime: 0, totalLunchTime: 0, totalLoginTime: 0 };
+        // Helper function to update the current break timer display
+        function updateCurrentBreakTimer(employee, encodedEmail, activeBreak, totalCoffeeTime, totalLunchTime) {
+            const now = new Date();
+            const coffeeTimeLimit = 30; // 30 minutes for coffee break
+            const lunchTimeLimit = 40; // 40 minutes for lunch break
+            
+            // Update coffee break display
+            const coffeeProgress = document.querySelector(`.coffee-progress-${encodedEmail}`);
+            const coffeeTime = document.querySelector(`.coffee-time-${encodedEmail}`);
+            
+            if (employee.status === 'coffee-break' && activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, coffeeTimeLimit - totalCoffeeTime);
+                const progress = (totalCoffeeTime / coffeeTimeLimit) * 100;
+                
+                if (coffeeProgress) coffeeProgress.style.width = `${Math.min(100, progress)}%`;
+                if (coffeeTime) coffeeTime.textContent = `${remainingMinutes}m left`;
+            } else {
+                // Still show used coffee time when not on break
+                const remainingMinutes = Math.max(0, coffeeTimeLimit - totalCoffeeTime);
+                const progress = (totalCoffeeTime / coffeeTimeLimit) * 100;
+                
+                if (coffeeProgress) coffeeProgress.style.width = `${Math.min(100, progress)}%`;
+                if (coffeeTime) coffeeTime.textContent = `${remainingMinutes}m left`;
+            }
+            
+            // Update lunch break display
+            const lunchProgress = document.querySelector(`.lunch-progress-${encodedEmail}`);
+            const lunchTime = document.querySelector(`.lunch-time-${encodedEmail}`);
+            
+            if (employee.status === 'lunch-break' && activeBreak) {
+                const startTime = new Date(activeBreak.start_time);
+                const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
+                const remainingMinutes = Math.max(0, lunchTimeLimit - totalLunchTime);
+                const progress = (totalLunchTime / lunchTimeLimit) * 100;
+                
+                if (lunchProgress) lunchProgress.style.width = `${Math.min(100, progress)}%`;
+                if (lunchTime) lunchTime.textContent = `${remainingMinutes}m left`;
+            } else {
+                // Still show used lunch time when not on break
+                const remainingMinutes = Math.max(0, lunchTimeLimit - totalLunchTime);
+                const progress = (totalLunchTime / lunchTimeLimit) * 100;
+                
+                if (lunchProgress) lunchProgress.style.width = `${Math.min(100, progress)}%`;
+                if (lunchTime) lunchTime.textContent = `${remainingMinutes}m left`;
             }
         }
 
@@ -3036,8 +2953,7 @@
                 const [employeesResponse, breaksResponse, historyResponse] = await Promise.all([
                     supabase.from('requests_users')
                         .select('*')
-                        .eq('role', 'back-office')
-                        .order('assignee'),
+                        .eq('role', 'back-office'),
                     supabase.from('employee_breaks')
                         .select('*')
                         .is('end_time', null),
@@ -3349,8 +3265,7 @@
                     const [employeesResponse, breaksResponse, historyResponse] = await Promise.all([
                         supabase.from('requests_users')
                             .select('*')
-                            .eq('role', 'back-office')
-                            .order('assignee'),
+                            .eq('role', 'back-office'),
                         supabase.from('employee_breaks')
                             .select('*')
                             .is('end_time', null),
@@ -3384,34 +3299,38 @@
             const encodedEmail = encodeEmailForSelector(employee.email);
             const now = new Date();
             
-            // Get total times to show proper progress even when not on break
-            calculateTotalTimeToday(employee.email).then(totals => {
+            // Calculate the start of the "work day" (8 AM today or yesterday depending on current time)
+            const today8AM = new Date(now);
+            today8AM.setHours(8, 0, 0, 0);
+
+            // If current time is before 8 AM, use yesterday's 8 AM as start time
+            const startTime = now < today8AM ? 
+                new Date(today8AM.getTime() - 24 * 60 * 60 * 1000) : // Yesterday 8 AM
+                today8AM; // Today 8 AM
+            
+            // Get total break times since 8AM today (or 8AM yesterday if it's before 8AM now)
+            calculateTotalBreakTime(employee, startTime).then(({ coffeeMinutes, lunchMinutes }) => {
                 const coffeeProgressElements = document.querySelectorAll(`.coffee-progress-${encodedEmail}`);
                 const coffeeTimeElements = document.querySelectorAll(`.coffee-time-${encodedEmail}`);
                 
+                // Coffee break constants
+                const coffeeTimeLimit = 30; // 30 minutes
+                const coffeeRemaining = Math.max(0, coffeeTimeLimit - coffeeMinutes);
+                const coffeeProgress = (coffeeMinutes / coffeeTimeLimit) * 100;
+                
                 // Check if currently on coffee break
                 if (employee.status === 'coffee-break' && activeBreak) {
-                    const startTime = new Date(activeBreak.start_time);
-                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
-                    const remainingMinutes = Math.max(0, 30 - elapsedMinutes);
-                    const progress = ((30 - remainingMinutes) / 30) * 100;
-                    
                     // Apply changes to all matching elements
                     coffeeProgressElements.forEach(el => {
-                        el.style.width = `${Math.min(100, progress)}%`;
+                        el.style.width = `${Math.min(100, coffeeProgress)}%`;
                         el.getBoundingClientRect(); // Force reflow
                     });
                     
                     coffeeTimeElements.forEach(el => {
-                        el.textContent = `${remainingMinutes}m left`;
+                        el.textContent = `${coffeeRemaining}m left`;
                     });
                 } else {
                     // Show used coffee time even when not on break
-                    const coffeeTimeUsed = totals.totalCoffeeTime;
-                    const coffeeTimeLimit = 30; // 30 minutes limit
-                    const coffeeProgress = (coffeeTimeUsed / coffeeTimeLimit) * 100;
-                    const coffeeRemaining = Math.max(0, coffeeTimeLimit - coffeeTimeUsed);
-                    
                     coffeeProgressElements.forEach(el => {
                         el.style.width = `${Math.min(100, coffeeProgress)}%`;
                     });
@@ -3421,31 +3340,26 @@
                     });
                 }
                 
-                // Update lunch break progress (similar approach)
+                // Update lunch break progress
                 const lunchProgressElements = document.querySelectorAll(`.lunch-progress-${encodedEmail}`);
                 const lunchTimeElements = document.querySelectorAll(`.lunch-time-${encodedEmail}`);
                 
+                // Lunch break constants
+                const lunchTimeLimit = 40; // 40 minutes
+                const lunchRemaining = Math.max(0, lunchTimeLimit - lunchMinutes);
+                const lunchProgress = (lunchMinutes / lunchTimeLimit) * 100;
+                
                 if (employee.status === 'lunch-break' && activeBreak) {
-                    const startTime = new Date(activeBreak.start_time);
-                    const elapsedMinutes = Math.floor((now - startTime) / (1000 * 60));
-                    const remainingMinutes = Math.max(0, 40 - elapsedMinutes);
-                    const progress = ((40 - remainingMinutes) / 40) * 100;
-                    
                     lunchProgressElements.forEach(el => {
-                        el.style.width = `${Math.min(100, progress)}%`;
+                        el.style.width = `${Math.min(100, lunchProgress)}%`;
                         el.getBoundingClientRect(); // Force reflow
                     });
                     
                     lunchTimeElements.forEach(el => {
-                        el.textContent = `${remainingMinutes}m left`;
+                        el.textContent = `${lunchRemaining}m left`;
                     });
                 } else {
                     // Show used lunch time even when not on break
-                    const lunchTimeUsed = totals.totalLunchTime;
-                    const lunchTimeLimit = 40; // 40 minutes limit
-                    const lunchProgress = (lunchTimeUsed / lunchTimeLimit) * 100;
-                    const lunchRemaining = Math.max(0, lunchTimeLimit - lunchTimeUsed);
-                    
                     lunchProgressElements.forEach(el => {
                         el.style.width = `${Math.min(100, lunchProgress)}%`;
                     });
@@ -3454,12 +3368,49 @@
                         el.textContent = `${lunchRemaining}m left`;
                     });
                 }
-                
-                // Also update login time progress
-                updateLoginTimeProgress(employee);
             }).catch(error => {
                 console.error('Error updating break progress bars:', error);
             });
+            
+            // Also update login time progress
+            updateLoginTimeProgress(employee);
+        }
+
+        // New helper function to calculate total break time since the start time
+        async function calculateTotalBreakTime(employee, startTime) {
+            try {
+                // Get all breaks for this employee since the start time
+                const { data: breaks, error } = await supabase
+                    .from('employee_breaks')
+                    .select('*')
+                    .eq('employee_email', employee.email)
+                    .gte('start_time', startTime.toISOString());
+
+                if (error) throw error;
+
+                // Calculate total minutes for each break type
+                let coffeeMinutes = 0;
+                let lunchMinutes = 0;
+                const now = new Date();
+
+                breaks.forEach(breakRecord => {
+                    const start = new Date(breakRecord.start_time);
+                    // If end_time is null (active break), use current time
+                    const end = breakRecord.end_time ? new Date(breakRecord.end_time) : now;
+                    const duration = Math.round((end - start) / (1000 * 60)); // minutes
+                    
+                    if (breakRecord.break_type === 'coffee-break') {
+                        coffeeMinutes += duration;
+                    } else if (breakRecord.break_type === 'lunch-break') {
+                        lunchMinutes += duration;
+                    }
+                });
+
+                return { coffeeMinutes, lunchMinutes };
+            } catch (error) {
+                console.error('Error calculating break time:', error);
+                return { coffeeMinutes: 0, lunchMinutes: 0 };
+            }
         }
 
         // Add a separate function to update login time progress
@@ -3549,28 +3500,43 @@
 
         // Add this function to sort employees based on the selected criteria
         function sortEmployees(employees, sortOrder) {
+            console.log('Sorting employees with order:', sortOrder);
+            console.log('Employees before sorting:', employees.map(e => ({ name: e.assignee, status: e.status })));
+
             if (sortOrder === 'break') {
-                return employees.sort((a, b) => {
+                const sorted = employees.sort((a, b) => {
                     const statusOrder = {
                         'lunch-break': 1,
                         'coffee-break': 2,
                         'ready': 3,
                         'offline': 4
                     };
-                    return statusOrder[a.status] - statusOrder[b.status] || a.assignee.localeCompare(b.assignee);
+                    const statusA = a.status || 'offline';
+                    const statusB = b.status || 'offline';
+                    const result = statusOrder[statusA] - statusOrder[statusB] || a.assignee.localeCompare(b.assignee);
+                    return result;
                 });
+                console.log('Employees after break sorting:', sorted.map(e => ({ name: e.assignee, status: e.status })));
+                return sorted;
             } else if (sortOrder === 'ready') {
-                return employees.sort((a, b) => {
+                const sorted = employees.sort((a, b) => {
                     const statusOrder = {
                         'ready': 1,
                         'lunch-break': 2,
                         'coffee-break': 3,
                         'offline': 4
                     };
-                    return statusOrder[a.status] - statusOrder[b.status] || a.assignee.localeCompare(b.assignee);
+                    const statusA = a.status || 'offline';
+                    const statusB = b.status || 'offline';
+                    const result = statusOrder[statusA] - statusOrder[statusB] || a.assignee.localeCompare(b.assignee);
+                    return result;
                 });
+                console.log('Employees after ready sorting:', sorted.map(e => ({ name: e.assignee, status: e.status })));
+                return sorted;
             } else if (sortOrder === 'alpha') {
-                return employees.sort((a, b) => a.assignee.localeCompare(b.assignee));
+                const sorted = employees.sort((a, b) => a.assignee.localeCompare(b.assignee));
+                console.log('Employees after alpha sorting:', sorted.map(e => ({ name: e.assignee, status: e.status })));
+                return sorted;
             }
             return employees;
         }
