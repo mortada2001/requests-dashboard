@@ -1296,24 +1296,35 @@
         // End current break period
         async function endBreak() {
             try {
-                const currentBreakId = localStorage.getItem('currentBreakId');
-                if (!currentBreakId) {
-                    console.warn('No current break ID found');
-                    return;
+                console.log('Attempting to end current break');
+                
+                // Get all active breaks for the current user
+                const { data: activeBreaks, error: queryError } = await supabase
+                    .from('employee_breaks')
+                    .select('*')
+                    .eq('employee_email', currentUser.email)
+                    .is('end_time', null);
+
+                if (queryError) throw queryError;
+
+                if (activeBreaks && activeBreaks.length > 0) {
+                    console.log('Found active breaks:', activeBreaks);
+                    
+                    // End all active breaks
+                    const now = new Date().toISOString();
+                    const promises = activeBreaks.map(breakRecord => 
+                        supabase
+                            .from('employee_breaks')
+                            .update({ end_time: now })
+                            .eq('id', breakRecord.id)
+                    );
+
+                    await Promise.all(promises);
+                    console.log('Successfully ended all active breaks');
                 }
 
-                const { error } = await supabase
-                    .from('employee_breaks')
-                    .update({
-                        end_time: new Date().toISOString()
-                    })
-                    .eq('id', currentBreakId);
-
-                if (error) throw error;
-
-                // Clear the current break ID
+                // Clear any stored break IDs
                 localStorage.removeItem('currentBreakId');
-                
             } catch (error) {
                 console.error('Error ending break:', error);
                 showNotification('Failed to end break', 'error');
@@ -1594,6 +1605,33 @@
                 // Store the previous status before updating
                 const previousStatus = currentUser.status;
 
+                // If switching from a break to ready OR switching between break types
+                if ((previousStatus === 'coffee-break' || previousStatus === 'lunch-break') &&
+                    (status === 'ready' || status === 'coffee-break' || status === 'lunch-break') && 
+                    status !== previousStatus) {
+                    
+                    // Get the current active break
+                    const { data: activeBreak, error: queryError } = await supabase
+                        .from('employee_breaks')
+                        .select('id')
+                        .eq('employee_email', currentUser.email)
+                        .eq('break_type', previousStatus)
+                        .is('end_time', null)
+                        .single();
+
+                    if (!queryError && activeBreak) {
+                        // Update the end_time of the current break
+                        const { error: updateError } = await supabase
+                            .from('employee_breaks')
+                            .update({ end_time: new Date().toISOString() })
+                            .eq('id', activeBreak.id);
+
+                        if (updateError) {
+                            console.error('Error updating break end time:', updateError);
+                        }
+                    }
+                }
+
                 // If switching to a break status
                 if (status === 'coffee-break' || status === 'lunch-break') {
                     // Check if break limit is reached
@@ -1605,15 +1643,8 @@
                         }
                         return;
                     }
-                }
 
-                // If switching from a break status to ready, end the current break
-                if (currentUser.status && (currentUser.status === 'coffee-break' || currentUser.status === 'lunch-break') && status === 'ready') {
-                    await endBreak();
-                }
-
-                // If switching to a break status and limit not reached
-                if ((status === 'coffee-break' || status === 'lunch-break') && !forcedByLimit) {
+                    // Start the new break
                     await startBreak(status);
                 }
 
@@ -1949,6 +1980,30 @@
         // Handle logout
         async function handleLogout() {
             try {
+                // If user is on a break, end it first
+                if (currentUser.status === 'coffee-break' || currentUser.status === 'lunch-break') {
+                    // Get the current active break
+                    const { data: activeBreak, error: queryError } = await supabase
+                        .from('employee_breaks')
+                        .select('id')
+                        .eq('employee_email', currentUser.email)
+                        .eq('break_type', currentUser.status)
+                        .is('end_time', null)
+                        .single();
+
+                    if (!queryError && activeBreak) {
+                        // Update the end_time of the current break
+                        const { error: updateError } = await supabase
+                            .from('employee_breaks')
+                            .update({ end_time: new Date().toISOString() })
+                            .eq('id', activeBreak.id);
+
+                        if (updateError) {
+                            console.error('Error updating break end time:', updateError);
+                        }
+                    }
+                }
+
                 // Clear intervals
                 if (statusUpdateInterval) {
                     clearInterval(statusUpdateInterval);
@@ -2784,7 +2839,9 @@
                                 `;
                             } else {
                                 newTicketsTable.innerHTML = tickets.map(ticket => `
-                                    <tr class="hover:bg-gray-50 transition-all duration-150">
+                                    <tr class="hover:bg-gray-50 transition-all duration-150" 
+                                        data-ticket-id="${ticket.ticket_id}"
+                                        data-assigned-at="${ticket.assigned_at}">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center space-x-2">
                                                 <span class="font-medium text-gray-900">${ticket.ticket_id}</span>
