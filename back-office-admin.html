@@ -722,6 +722,106 @@
             background-color: #fee2e2;
             color: #b91c1c;
         }
+
+        /* Ticket history table animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        #history-table-body tr {
+            animation: fadeInUp 0.3s ease forwards;
+            animation-delay: calc(var(--row-index) * 0.05s);
+            opacity: 0;
+        }
+        
+        #history-table-body tr:hover {
+            background-color: #f9fafb;
+            transition: background-color 0.2s ease;
+        }
+        
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .status-pill.new {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-pill.in-progress {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-pill.closed {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .sort-indicator {
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+        
+        th[data-sort].active .sort-indicator {
+            opacity: 1;
+        }
+        
+        .sort-asc .fa-sort::before {
+            content: "\f0de"; /* fa-sort-up */
+        }
+        
+        .sort-desc .fa-sort::before {
+            content: "\f0dd"; /* fa-sort-down */
+        }
+        
+        /* Shimmer loading effect for the history table */
+        .shimmer {
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,0.6) 50%, 
+                rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .row-loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .row-loading::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,0.6) 50%, 
+                rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -834,6 +934,10 @@
                         <button class="nav-link" data-tab="tickets">
                             <i class="fas fa-ticket-alt mr-2"></i>
                             Ticket Monitoring
+                        </button>
+                        <button class="nav-link" data-tab="ticket-history">
+                            <i class="fas fa-history mr-2"></i>
+                            Ticket History
                         </button>
                         <button class="nav-link" data-tab="analytics">
                             <i class="fas fa-chart-bar mr-2"></i>
@@ -1000,6 +1104,91 @@
                                 <i class="fas fa-chevron-left mr-1"></i> Previous
                             </button>
                             <button id="tickets-next-page" class="pagination-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next <i class="fas fa-chevron-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticket History Tab -->
+                <div id="ticket-history-tab" class="p-6 hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800">Ticket History</h2>
+                        <div class="flex space-x-3">
+                            <input type="text" id="history-search" placeholder="Search by ticket ID" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select id="history-status-filter" class="status-filter">
+                                <option value="all">All Statuses</option>
+                                <option value="new">New</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                            <select id="history-sort" class="status-filter">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="handling-time">By Handling Time</option>
+                            </select>
+                            <button id="refresh-history" class="refresh-btn">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ticket History Table -->
+                    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200 mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="ticket_id">
+                                            <div class="flex items-center">
+                                                Ticket ID
+                                                <i class="fas fa-sort ml-1"></i>
+                                            </div>
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="created_at">
+                                            <div class="flex items-center">
+                                                Created At
+                                                <i class="fas fa-sort ml-1"></i>
+                                            </div>
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="assigned_at">
+                                            <div class="flex items-center">
+                                                Assigned At
+                                                <i class="fas fa-sort ml-1"></i>
+                                            </div>
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Status
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Assigned To
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="avg_handling_time">
+                                            <div class="flex items-center">
+                                                Handling Time
+                                                <i class="fas fa-sort ml-1"></i>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Ticket history rows will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="mt-6 flex justify-between items-center">
+                        <div class="text-sm text-gray-600" id="history-pagination-info">
+                            Showing <span id="history-showing">0</span> of <span id="history-total">0</span> tickets
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="history-prev-page" class="pagination-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-left mr-1"></i> Previous
+                            </button>
+                            <button id="history-next-page" class="pagination-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
                                 Next <i class="fas fa-chevron-right ml-1"></i>
                             </button>
                         </div>
@@ -3966,6 +4155,473 @@
                 console.error('Error updating dashboard stats:', error);
                 showNotification('Failed to update stats', 'error');
             }
+        }
+
+        // Variables for Ticket History
+        let historyCurrentPage = 1;
+        let historyPerPage = 100;
+        let historyTotal = 0;
+        let allHistoryTickets = [];
+        let currentHistorySortField = 'created_at';
+        let currentHistorySortDirection = 'desc';
+
+        // Load and display ticket history
+        async function loadTicketHistory() {
+            try {
+                // Show loading state
+                const refreshButton = document.getElementById('refresh-history');
+                if (refreshButton) {
+                    refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                    refreshButton.disabled = true;
+                }
+
+                // Display loading rows
+                const historyTableBody = document.getElementById('history-table-body');
+                if (historyTableBody) {
+                    historyTableBody.innerHTML = Array(10).fill(0).map(() => `
+                        <tr class="row-loading">
+                            <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-gray-200 rounded w-36"></div></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Get query params
+                const statusFilter = document.getElementById('history-status-filter')?.value || 'all';
+                const searchQuery = document.getElementById('history-search')?.value || '';
+                
+                // Build query
+                let query = supabase
+                    .from('tickets')
+                    .select('ticket_id, created_at, assigned_at, status, assigned_to, avg_handling_time');
+                
+                // Apply status filter
+                if (statusFilter !== 'all') {
+                    query = query.eq('status', statusFilter);
+                }
+
+                // Apply search filter if provided
+                if (searchQuery) {
+                    query = query.ilike('ticket_id', `%${searchQuery}%`);
+                }
+
+                // Apply sorting
+                if (currentHistorySortField === 'created_at') {
+                    query = query.order('created_at', { ascending: currentHistorySortDirection === 'asc' });
+                } else if (currentHistorySortField === 'assigned_at') {
+                    query = query.order('assigned_at', { ascending: currentHistorySortDirection === 'asc', nullsFirst: false });
+                } else if (currentHistorySortField === 'avg_handling_time') {
+                    query = query.order('avg_handling_time', { ascending: currentHistorySortDirection === 'asc', nullsFirst: false });
+                } else if (currentHistorySortField === 'ticket_id') {
+                    query = query.order('ticket_id', { ascending: currentHistorySortDirection === 'asc' });
+                }
+
+                // Execute the query
+                const { data: tickets, error } = await query;
+
+                // Fetch all users for display
+                const { data: users } = await supabase
+                    .from('requests_users')
+                    .select('email, assignee');
+                
+                // Create user lookup map
+                const userMap = {};
+                if (users && users.length > 0) {
+                    users.forEach(user => {
+                        userMap[user.email] = user.assignee;
+                    });
+                }
+
+                if (error) throw error;
+
+                // Process and store tickets
+                allHistoryTickets = tickets ? tickets.map(ticket => {
+                    const assigneeName = ticket.assigned_to && userMap[ticket.assigned_to] 
+                        ? userMap[ticket.assigned_to] 
+                        : (ticket.assigned_to ? ticket.assigned_to : 'Unassigned');
+                    
+                    // Calculate handling time in minutes if both timestamps exist
+                    let handlingTimeMinutes = null;
+                    if (ticket.assigned_at && ticket.avg_handling_time) {
+                        const assignedTime = new Date(ticket.assigned_at);
+                        const handlingTime = new Date(ticket.avg_handling_time);
+                        
+                        // Calculate difference in milliseconds and convert to minutes
+                        const diffMs = handlingTime - assignedTime;
+                        handlingTimeMinutes = Math.round(diffMs / (1000 * 60));
+                    }
+                    
+                    return {
+                        ...ticket,
+                        assignee_name: assigneeName,
+                        handling_time_minutes: handlingTimeMinutes
+                    };
+                }) : [];
+
+                // Update total count
+                historyTotal = allHistoryTickets.length;
+
+                // Handle client-side sorting for columns that can't be sorted on the server
+                if (currentHistorySortField === 'avg_handling_time') {
+                    allHistoryTickets.sort((a, b) => {
+                        const valueA = a.handling_time_minutes || 0;
+                        const valueB = b.handling_time_minutes || 0;
+                        
+                        return currentHistorySortDirection === 'asc' 
+                            ? valueA - valueB 
+                            : valueB - valueA;
+                    });
+                }
+
+                // Apply pagination
+                const startIndex = (historyCurrentPage - 1) * historyPerPage;
+                const endIndex = Math.min(startIndex + historyPerPage, historyTotal);
+                const paginatedTickets = allHistoryTickets.slice(startIndex, endIndex);
+
+                // Render the results
+                renderTicketHistory(paginatedTickets, startIndex, endIndex);
+
+                // Update pagination controls
+                updateHistoryPaginationControls();
+
+            } catch (error) {
+                console.error('Error loading ticket history:', error);
+                showNotification('Failed to load ticket history', 'error');
+            } finally {
+                // Restore refresh button
+                const refreshButton = document.getElementById('refresh-history');
+                if (refreshButton) {
+                    refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                    refreshButton.disabled = false;
+                }
+            }
+        }
+
+        // Render ticket history table
+        function renderTicketHistory(tickets, startIndex, endIndex) {
+            const tableBody = document.getElementById('history-table-body');
+            if (!tableBody) return;
+
+            // Clear existing content
+            tableBody.innerHTML = '';
+
+            if (tickets.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                            <i class="fas fa-ticket-alt text-gray-400 text-4xl mb-3"></i>
+                            <p>No ticket history found</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Create and append ticket rows with animation delay based on index
+            tickets.forEach((ticket, index) => {
+                const row = document.createElement('tr');
+                row.style.setProperty('--row-index', index);
+                row.className = 'transition-all duration-200';
+                
+                // Format status pill
+                const statusClass = ticket.status === 'new' ? 'new' : 
+                                  ticket.status === 'in-progress' ? 'in-progress' : 'closed';
+                
+                // Format handling time
+                let handlingTime = 'N/A';
+                if (ticket.handling_time_minutes !== null) {
+                    handlingTime = formatDurationMinutes(ticket.handling_time_minutes);
+                }
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${ticket.ticket_id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${formatDateDetailed(ticket.created_at)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${ticket.assigned_at ? formatDateDetailed(ticket.assigned_at) : 'Not assigned'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="status-pill ${statusClass}">
+                            ${formatStatus(ticket.status)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${ticket.assignee_name || 'Unassigned'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium ${handlingTime !== 'N/A' ? 'text-gray-900' : 'text-gray-500'}">${handlingTime}</div>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+
+            // Update pagination info
+            document.getElementById('history-showing').textContent = tickets.length > 0 ? `${startIndex + 1}-${endIndex}` : '0';
+            document.getElementById('history-total').textContent = historyTotal;
+        }
+
+        // Format duration from minutes
+        function formatDurationMinutes(minutes) {
+            if (minutes === null || minutes === undefined || isNaN(minutes)) return 'N/A';
+            
+            // Ensure minutes is a number
+            minutes = Math.abs(Number(minutes));
+            
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = Math.round(minutes % 60);
+            
+            if (hours === 0) {
+                return `${remainingMinutes}m`;
+            } else {
+                return `${hours}h ${remainingMinutes}m`;
+            }
+        }
+
+        // Update pagination controls for history
+        function updateHistoryPaginationControls() {
+            const prevButton = document.getElementById('history-prev-page');
+            const nextButton = document.getElementById('history-next-page');
+            const totalPages = Math.ceil(historyTotal / historyPerPage);
+            
+            if (prevButton) prevButton.disabled = historyCurrentPage <= 1;
+            if (nextButton) nextButton.disabled = historyCurrentPage >= totalPages;
+        }
+
+        // History pagination handlers
+        function nextHistoryPage() {
+            const totalPages = Math.ceil(historyTotal / historyPerPage);
+            if (historyCurrentPage < totalPages) {
+                historyCurrentPage++;
+                const startIndex = (historyCurrentPage - 1) * historyPerPage;
+                const endIndex = Math.min(startIndex + historyPerPage, historyTotal);
+                const paginatedTickets = allHistoryTickets.slice(startIndex, endIndex);
+                renderTicketHistory(paginatedTickets, startIndex, endIndex);
+                updateHistoryPaginationControls();
+            }
+        }
+
+        function prevHistoryPage() {
+            if (historyCurrentPage > 1) {
+                historyCurrentPage--;
+                const startIndex = (historyCurrentPage - 1) * historyPerPage;
+                const endIndex = Math.min(startIndex + historyPerPage, historyTotal);
+                const paginatedTickets = allHistoryTickets.slice(startIndex, endIndex);
+                renderTicketHistory(paginatedTickets, startIndex, endIndex);
+                updateHistoryPaginationControls();
+            }
+        }
+
+        // Sort the ticket history table
+        function sortHistoryTable(field) {
+            // Toggle sort direction if clicking the same field
+            if (field === currentHistorySortField) {
+                currentHistorySortDirection = currentHistorySortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentHistorySortField = field;
+                currentHistorySortDirection = 'asc';
+            }
+
+            // Reset to first page
+            historyCurrentPage = 1;
+            
+            // Update sort indicators in the UI
+            updateSortIndicators(field);
+            
+            // Reload data with new sort
+            loadTicketHistory();
+        }
+
+        // Update sort indicators in the UI
+        function updateSortIndicators(field) {
+            // Remove active class from all headers
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.classList.remove('active', 'sort-asc', 'sort-desc');
+            });
+            
+            // Add active class and direction to current sort field
+            const currentHeader = document.querySelector(`th[data-sort="${field}"]`);
+            if (currentHeader) {
+                currentHeader.classList.add('active');
+                currentHeader.classList.add(currentHistorySortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            }
+        }
+
+        // Format date for display with more details
+        function formatDateDetailed(dateString) {
+            if (!dateString) return 'N/A';
+            
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // Set up ticket history event listeners
+        function setupTicketHistoryListeners() {
+            // Pagination buttons
+            document.getElementById('history-next-page')?.addEventListener('click', nextHistoryPage);
+            document.getElementById('history-prev-page')?.addEventListener('click', prevHistoryPage);
+            
+            // Search input
+            const searchInput = document.getElementById('history-search');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', (e) => {
+                    // Reset to first page when searching
+                    historyCurrentPage = 1;
+                    
+                    // If Enter key pressed or after a delay
+                    if (e.key === 'Enter') {
+                        loadTicketHistory();
+                    } else {
+                        clearTimeout(searchInput.debounceTimer);
+                        searchInput.debounceTimer = setTimeout(() => {
+                            loadTicketHistory();
+                        }, 500);
+                    }
+                });
+            }
+            
+            // Status filter
+            document.getElementById('history-status-filter')?.addEventListener('change', () => {
+                historyCurrentPage = 1; // Reset to first page
+                loadTicketHistory();
+            });
+            
+            // Sort controls
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const field = th.getAttribute('data-sort');
+                    sortHistoryTable(field);
+                });
+            });
+            
+            // Refresh button
+            document.getElementById('refresh-history')?.addEventListener('click', loadTicketHistory);
+        }
+
+        // Add this to the document ready function to initialize the ticket history
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Existing initialization code...
+
+                // Set up all event listeners
+                document.getElementById('logout').addEventListener('click', handleLogout);
+                document.getElementById('refresh-employees').addEventListener('click', loadEmployees);
+                document.getElementById('refresh-tickets').addEventListener('click', loadTickets);
+                document.getElementById('employee-status-filter').addEventListener('change', loadEmployees);
+                document.getElementById('ticket-status-filter').addEventListener('change', loadTickets);
+                document.getElementById('employee-sort-order').addEventListener('change', loadEmployees);
+                
+                // Add ticket sorting and search event listeners
+                document.getElementById('ticket-sort')?.addEventListener('change', loadTickets);
+                document.getElementById('tickets-next-page')?.addEventListener('click', nextTicketsPage);
+                document.getElementById('tickets-prev-page')?.addEventListener('click', prevTicketsPage);
+                
+                // Set up ticket history listeners
+                setupTicketHistoryListeners();
+                
+                // Add event listener for search
+                const searchInput = document.getElementById('ticket-search');
+                if (searchInput) {
+                    searchInput.addEventListener('keyup', (e) => {
+                        // Reset to first page when searching
+                        ticketsCurrentPage = 1;
+                        
+                        // If Enter key pressed or after a delay
+                        if (e.key === 'Enter') {
+                            loadTickets();
+                        } else {
+                            clearTimeout(searchInput.debounceTimer);
+                            searchInput.debounceTimer = setTimeout(() => {
+                                loadTickets();
+                            }, 500);
+                        }
+                    });
+                }
+
+                // Set up tab switching
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                        
+                        document.querySelectorAll('[id$="-tab"]').forEach(tab => tab.classList.add('hidden'));
+                        document.getElementById(`${link.dataset.tab}-tab`).classList.remove('hidden');
+                        
+                        if (link.dataset.tab === 'analytics') {
+                            initializeCharts();
+                        } else if (link.dataset.tab === 'ticket-history') {
+                            // Load ticket history when tab is selected
+                            loadTicketHistory();
+                        }
+                    });
+                });
+
+                // Initial load
+                await Promise.all([
+                    loadEmployees(),
+                    loadTickets(),
+                    loadStatistics()
+                    // Don't initially load ticket history to improve initial load time
+                    // It will be loaded when the tab is selected
+                ]);
+
+                // Set up realtime subscriptions
+                setupRealTimeSubscriptions();
+
+                // Hide loading spinner
+                document.getElementById('loading').classList.add('hidden');
+
+                // Set up smooth updates
+                setupSmoothUpdates();
+
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showNotification('Failed to initialize dashboard', 'error');
+            }
+        });
+        
+        // Update realtime subscriptions to include ticket history
+        function setupRealTimeSubscriptions() {
+            // Subscribe to employee status changes
+            supabase
+                .channel('employee-status')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'requests_users' }, payload => {
+                    if (payload.new.role === 'back-office') {
+                        loadEmployees();
+                        updateCharts();
+                    }
+                })
+                .subscribe();
+
+            // Subscribe to ticket changes
+            supabase
+                .channel('tickets')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
+                    loadTickets();
+                    loadStatistics();
+                    updateCharts();
+                    
+                    // Update ticket history if the tab is currently active
+                    const historyTab = document.getElementById('ticket-history-tab');
+                    if (historyTab && !historyTab.classList.contains('hidden')) {
+                        loadTicketHistory();
+                    }
+                })
+                .subscribe();
         }
     </script>
 </body>
