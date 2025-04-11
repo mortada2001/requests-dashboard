@@ -1116,7 +1116,37 @@
         // Load statistics
         async function loadStatistics() {
             try {
-                // Get total and active employees count
+                // Get today's date range
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Start of today
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1); // Start of tomorrow
+
+                // Get ticket counts for today only
+                const { data: tickets } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .gte('created_at', today.toISOString())
+                    .lt('created_at', tomorrow.toISOString());
+
+                if (!tickets) {
+                    throw new Error('No ticket data received');
+                }
+
+                const newTickets = tickets.filter(t => t.status === 'new').length;
+                const inProgressTickets = tickets.filter(t => t.status === 'in-progress').length;
+                const closedTickets = tickets.filter(t => t.status === 'closed').length;
+                const overdueTickets = tickets.filter(t => isOverdue(t)).length;
+
+                // Update both ticket count displays
+                document.getElementById('new-tickets').textContent = newTickets;
+                document.getElementById('new-tickets-count').textContent = newTickets;
+                document.getElementById('in-progress-tickets-count').textContent = inProgressTickets;
+                document.getElementById('closed-tickets-count').textContent = closedTickets;
+                document.getElementById('overdue-tickets-count').textContent = overdueTickets;
+                document.getElementById('total-tickets-count').textContent = tickets.length;
+
+                // Get employees on coffee and lunch breaks
                 const { data: employees } = await supabase
                     .from('requests_users')
                     .select('*')
@@ -1136,86 +1166,6 @@
 
                 document.getElementById('active-employees').textContent = `${activeEmployees}/${totalEmployees}`;
 
-                // Directly count tickets by status to avoid the 1000 record limit
-                // Get new tickets count
-                const { count: newTickets, error: newTicketsError } = await supabase
-                    .from('tickets')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('status', 'new');
-                
-                if (newTicketsError) {
-                    console.error('Error fetching new tickets count:', newTicketsError);
-                }
-                
-                // Get in-progress tickets count
-                const { count: inProgressTickets, error: inProgressError } = await supabase
-                    .from('tickets')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('status', 'in-progress');
-                
-                if (inProgressError) {
-                    console.error('Error fetching in-progress tickets count:', inProgressError);
-                }
-                
-                // Get closed tickets count
-                const { count: closedTickets, error: closedError } = await supabase
-                    .from('tickets')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('status', 'closed');
-                
-                if (closedError) {
-                    console.error('Error fetching closed tickets count:', closedError);
-                }
-                
-                // Get total tickets count
-                const { count: totalTickets, error: totalError } = await supabase
-                    .from('tickets')
-                    .select('*', { count: 'exact', head: true });
-                
-                if (totalError) {
-                    console.error('Error fetching total tickets count:', totalError);
-                }
-                
-                console.log('New tickets count:', newTickets);
-                console.log('In progress tickets count:', inProgressTickets);
-                console.log('Closed tickets count:', closedTickets);
-                console.log('Total tickets count:', totalTickets);
-
-                // Get overdue tickets (this is more complex as it needs to check timestamps)
-                const { data: recentTickets, error: recentError } = await supabase
-                    .from('tickets')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(100); // Just get the recent ones to check
-
-                let overdueTickets = 0;
-                if (recentTickets) {
-                    overdueTickets = recentTickets.filter(t => isOverdue(t)).length;
-                } else if (recentError) {
-                    console.error('Error fetching tickets for overdue check:', recentError);
-                }
-
-                // Update both ticket count displays
-                const newTicketsElement = document.getElementById('new-tickets');
-                if (newTicketsElement) {
-                    newTicketsElement.textContent = newTickets || 0;
-                } else {
-                    console.error('Element with ID "new-tickets" not found');
-                }
-
-                const newTicketsCountElement = document.getElementById('new-tickets-count');
-                if (newTicketsCountElement) {
-                    newTicketsCountElement.textContent = newTickets || 0;
-                } else {
-                    console.error('Element with ID "new-tickets-count" not found');
-                }
-
-                document.getElementById('in-progress-tickets-count').textContent = inProgressTickets || 0;
-                document.getElementById('closed-tickets-count').textContent = closedTickets || 0;
-                document.getElementById('overdue-tickets-count').textContent = overdueTickets;
-                document.getElementById('total-tickets-count').textContent = totalTickets || 0;
-
-                // Get employees on coffee and lunch breaks
                 const coffeeBreak = employees.filter(emp => emp.status === 'coffee-break').length;
                 const lunchBreak = employees.filter(emp => emp.status === 'lunch-break').length;
 
@@ -2667,8 +2617,21 @@
                 
                 // Apply search filter if provided
                 if (searchQuery) {
-                    query = query.ilike('ticket_id', `%${searchQuery}%`);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Start of today
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1); // Start of tomorrow
+
+                    query = query
+                        .ilike('ticket_id', `%${searchQuery}%`)
+                        .gte('created_at', today.toISOString())
+                        .lt('created_at', tomorrow.toISOString());
                 }
+
+                // Apply date filter to show only today's tickets
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Set to start of the day
+                query = query.gte('created_at', today.toISOString());
 
                 // Execute the query
                 const { data: tickets, error, count } = await query;
@@ -3924,6 +3887,86 @@
         }
 
         // Add event listeners for search and pagination
+        async function updateDashboardStats() {
+            try {
+                // Get today's date range
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Start of today
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1); // Start of tomorrow
+
+                // Get all back-office employees
+                const { data: employees, error: employeeError } = await supabase
+                    .from('requests_users')
+                    .select('*')
+                    .eq('role', 'back-office')
+                    .neq('status', 'offline');
+                
+                if (employeeError) throw employeeError;
+                
+                // Get total in-progress tickets count for today
+                const { data: todayTickets, error: ticketsError } = await supabase
+                    .from('tickets')
+                    .select('*')
+                    .gte('created_at', today.toISOString())
+                    .lt('created_at', tomorrow.toISOString());
+                
+                if (ticketsError) throw ticketsError;
+
+                const totalTickets = todayTickets ? todayTickets.length : 0;
+                
+                // Get closed tickets with handling times for today
+                const { data: closedTickets, error: ahtError } = await supabase
+                    .from('tickets')
+                    .select('assigned_at, avg_handling_time')
+                    .eq('status', 'closed')
+                    .gte('created_at', today.toISOString())
+                    .lt('created_at', tomorrow.toISOString())
+                    .not('avg_handling_time', 'is', null);
+                
+                if (ahtError) throw ahtError;
+                
+                // Calculate AHT
+                let totalHandlingTime = 0;
+                let ticketsWithAHT = 0;
+                
+                if (closedTickets && closedTickets.length > 0) {
+                    closedTickets.forEach(ticket => {
+                        if (ticket.assigned_at && ticket.avg_handling_time) {
+                            const handlingTime = calculateHandlingTime(ticket.assigned_at, ticket.avg_handling_time);
+                            totalHandlingTime += handlingTime;
+                            ticketsWithAHT++;
+                        }
+                    });
+                }
+                
+                const averageAHT = ticketsWithAHT > 0 ? Math.round(totalHandlingTime / ticketsWithAHT) : 0;
+                
+                // Count employees by status
+                let readyEmployees = 0;
+                let coffeeBreakEmployees = 0;
+                let lunchBreakEmployees = 0;
+                
+                if (employees && employees.length > 0) {
+                    employees.forEach(emp => {
+                        if (emp.status === 'ready') readyEmployees++;
+                        else if (emp.status === 'coffee-break') coffeeBreakEmployees++;
+                        else if (emp.status === 'lunch-break') lunchBreakEmployees++;
+                    });
+                }
+                
+                // Update stats with animation
+                animateCounter('total-tickets', totalTickets);
+                animateCounter('ready-employees', readyEmployees);
+                animateCounter('coffee-break-employees', coffeeBreakEmployees);
+                animateCounter('lunch-break-employees', lunchBreakEmployees);
+                animateCounter('avg-handling-time', averageAHT, 'min');
+                
+            } catch (error) {
+                console.error('Error updating dashboard stats:', error);
+                showNotification('Failed to update stats', 'error');
+            }
+        }
     </script>
 </body>
 </html> 
